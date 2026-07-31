@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useLayoutEffect } from 'react'
 import './App.css'
 import CalculatorDisplay from './components/CalculatorDisplay'
 import CalculatorKeypad from './components/CalculatorKeypad'
@@ -10,6 +10,19 @@ export default function App() {
   const [statusLabel, setStatusLabel] = useState<string>('Waiting for input')
   const [ans, setAns] = useState<number | string>('')
   const [error, setError] = useState<string>('')
+  const inputRef = useRef<HTMLInputElement>(null)
+  const selectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
+  const nextCaretRef = useRef<{ start: number; end: number } | null>(null)
+
+  // Restore caret and focus after controlled updates
+  useLayoutEffect(() => {
+    const next = nextCaretRef.current
+    if (next && inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.setSelectionRange(next.start, next.end)
+      nextCaretRef.current = null
+    }
+  }, [expression])
 
   const setEditingFeedback = () => {
     setResult('')
@@ -23,66 +36,95 @@ export default function App() {
     setStatusLabel('Error detected – fix expression')
   }
 
+  const updateExpression = (newExpr: string, caretStart: number, caretEnd: number) => {
+    setExpression(newExpr)
+    selectionRef.current = { start: caretStart, end: caretEnd }
+    nextCaretRef.current = { start: caretStart, end: caretEnd }
+    setEditingFeedback()
+  }
+
   const appendValue = (value: string) => {
-    setExpression(prev => `${prev}${value}`)
+    const prev = expression
+    const { start, end } = selectionRef.current
+    const newExpr = `${prev.slice(0, start)}${value}${prev.slice(end)}`
+    const pos = start + value.length
+    setExpression(newExpr)
+    selectionRef.current = { start: pos, end: pos }
+    nextCaretRef.current = { start: pos, end: pos }
     setEditingFeedback()
   }
 
   const insertDecimalPoint = () => {
-    setExpression(prev => {
-      let newExpr: string
-      if (!prev || /[+\-×÷*/^%]$/.test(prev)) {
-        newExpr = `${prev}0.`
-      } else {
-        const lastNumberMatch = prev.match(/(\d+(\.\d*)?)$/)
-        if (lastNumberMatch && lastNumberMatch[0].includes('.')) {
-          return prev
-        }
-        newExpr = `${prev}.`
+    const prev = expression
+    const { start, end } = selectionRef.current
+    const left = prev.slice(0, start)
+    const right = prev.slice(end)
+    let insert = '.'
+
+    if (!left || /[+\-×÷*/^%]$/.test(left)) {
+      insert = '0.'
+    } else {
+      const lastNumberMatch = left.match(/(\d+(\.\d*)?)$/)
+      if (lastNumberMatch && lastNumberMatch[0].includes('.')) {
+        return
       }
-      setEditingFeedback()
-      return newExpr
-    })
+    }
+
+    const newExpr = left + insert + right
+    const pos = left.length + insert.length
+    setExpression(newExpr)
+    selectionRef.current = { start: pos, end: pos }
+    nextCaretRef.current = { start: pos, end: pos }
+    setEditingFeedback()
   }
 
   const deleteLastCharacter = () => {
-    setExpression(prev => {
-      const newExpr = prev.slice(0, -1)
-      if (newExpr) {
-        setEditingFeedback()
-      } else {
-        setResult('')
-        setError('')
-        setStatusLabel('Waiting for input')
-      }
-      return newExpr
-    })
+    const prev = expression
+    const { start, end } = selectionRef.current
+    let newExpr = ''
+    let pos = 0
+
+    if (start !== end) {
+      // delete selected text
+      newExpr = prev.slice(0, start) + prev.slice(end)
+      pos = start
+    } else if (start > 0) {
+      newExpr = prev.slice(0, start - 1) + prev.slice(start)
+      pos = start - 1
+    } else {
+      newExpr = prev
+      pos = 0
+    }
+
+    setExpression(newExpr)
+    selectionRef.current = { start: pos, end: pos }
+    nextCaretRef.current = { start: pos, end: pos }
+
+    if (newExpr) {
+      setEditingFeedback()
+    } else {
+      setResult('')
+      setError('')
+      setStatusLabel('Waiting for input')
+    }
   }
 
   const clearExpression = () => {
     setExpression('')
+    selectionRef.current = { start: 0, end: 0 }
+    nextCaretRef.current = { start: 0, end: 0 }
     setResult('')
     setError('')
     setStatusLabel('Waiting for input')
   }
 
   const handleKeyPress = (key: string) => {
-    // Support basic operators and percentage
+    // core operators insertion at caret
     if (['+', '-', '×', '÷', '*', '/', '^', '%'].includes(key)) {
       if (!expression && key !== '-') {
         return
       }
-
-      setExpression(prev => {
-        if (/[+\-×÷*/^%]$/.test(prev)) {
-          if (prev.length === 1) {
-            return prev
-          }
-          return prev.slice(0, -1) + key
-        }
-        return prev + key
-      })
-      setEditingFeedback()
+      appendValue(key)
       return
     }
 
@@ -102,9 +144,7 @@ export default function App() {
           return
         }
 
-        const sanitized = expression
-          .replace(/×/g, '*')
-          .replace(/÷/g, '/')
+        const sanitized = expression.replace(/×/g, '*').replace(/÷/g, '/')
         const evaluation = safeEvaluateExpression(sanitized)
 
         if (evaluation.error || evaluation.value === undefined) {
@@ -118,6 +158,9 @@ export default function App() {
         setAns(evaluation.value)
         setError('')
         setStatusLabel('Result')
+        // place caret at end
+        nextCaretRef.current = { start: resultString.length, end: resultString.length }
+        selectionRef.current = { start: resultString.length, end: resultString.length }
         break
       }
       case 'Ans':
@@ -132,15 +175,23 @@ export default function App() {
 
   const hasError = Boolean(error)
 
+  const onExpressionChange = (newExpr: string, selStart: number, selEnd: number) => {
+    selectionRef.current = { start: selStart, end: selEnd }
+    setExpression(newExpr)
+    setEditingFeedback()
+  }
+
   return (
     <main className="calculator-shell">
       <div className="calculator-panel">
         <CalculatorDisplay
+          ref={inputRef}
           expression={expression}
           result={result}
           statusLabel={statusLabel}
           error={error}
           hasError={hasError}
+          onExpressionChange={onExpressionChange}
         />
         <CalculatorKeypad onKeyPress={handleKeyPress} />
       </div>
