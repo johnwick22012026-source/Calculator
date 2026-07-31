@@ -17,6 +17,12 @@ export default function App() {
     setStatusLabel('Editing')
   }
 
+  const applyEvaluationError = (message: string) => {
+    setResult('')
+    setError(message)
+    setStatusLabel(message === 'Cannot divide by zero' ? 'Math error' : 'Error')
+  }
+
   const appendValue = (value: string) => {
     setExpression(prev => `${prev}${value}`)
     setEditingFeedback()
@@ -91,9 +97,7 @@ export default function App() {
         break
       case '=': {
         if (!expression.trim()) {
-          setError('Nothing to evaluate')
-          setResult('')
-          setStatusLabel('Error')
+          applyEvaluationError('Nothing to evaluate')
           return
         }
 
@@ -101,9 +105,7 @@ export default function App() {
         const evaluation = safeEvaluateExpression(sanitized)
 
         if (evaluation.error || evaluation.value === undefined) {
-          setError(evaluation.error ?? 'Unable to evaluate expression')
-          setResult('')
-          setStatusLabel('Error')
+          applyEvaluationError(evaluation.error ?? 'Unable to evaluate expression')
           return
         }
 
