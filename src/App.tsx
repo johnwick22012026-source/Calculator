@@ -33,6 +33,8 @@ const CalculatorKeypad: React.FC<KeypadProps> = ({ onKeyPress }) => (
   </div>
 )
 
+const isOperatorEnding = (input: string) => /[+\-×÷*/(]$/.test(input)
+
 export default function App() {
   const [expression, setExpression] = useState<string>('')
   const [result, setResult] = useState<string>('')
@@ -40,19 +42,55 @@ export default function App() {
   const [ans, setAns] = useState<number | string>('')
   const [error, setError] = useState<string>('')
 
+  const setEditingFeedback = () => {
+    setResult('')
+    setError('')
+    setStatusLabel('Editing')
+  }
+
+  const appendValue = (value: string) => {
+    setExpression(prev => `${prev}${value}`)
+    setEditingFeedback()
+  }
+
+  const insertDecimalPoint = () => {
+    setExpression(prev => {
+      if (!prev || isOperatorEnding(prev)) {
+        return `${prev}0.`
+      }
+
+      const lastNumberMatch = prev.match(/(\d+(\.\d*)?)$/)
+      if (lastNumberMatch && lastNumberMatch[0].includes('.')) {
+        return prev
+      }
+
+      return `${prev}.`
+    })
+    setEditingFeedback()
+  }
+
+  const deleteLastCharacter = () => {
+    setExpression(prev => (prev.length ? prev.slice(0, -1) : ''))
+    setEditingFeedback()
+  }
+
+  const clearExpression = () => {
+    setExpression('')
+    setResult('')
+    setError('')
+    setStatusLabel('Cleared')
+  }
+
   const handleKeyPress = (key: string) => {
     switch (key) {
       case 'AC':
-        setExpression('')
-        setResult('')
-        setError('')
-        setStatusLabel('Cleared')
+        clearExpression()
         break
       case 'DEL':
-        setExpression(prev => prev.slice(0, -1))
-        setResult('')
-        setError('')
-        setStatusLabel('Editing')
+        deleteLastCharacter()
+        break
+      case '.':
+        insertDecimalPoint()
         break
       case '=':
         if (!expression) {
@@ -77,15 +115,12 @@ export default function App() {
         }
         break
       case 'Ans':
-        setExpression(prev => prev + ans)
-        setError('')
-        setStatusLabel('Editing')
+        if (ans !== '') {
+          appendValue(String(ans))
+        }
         break
       default:
-        setExpression(prev => prev + key)
-        setResult('')
-        setError('')
-        setStatusLabel('Editing')
+        appendValue(key)
     }
   }
 
