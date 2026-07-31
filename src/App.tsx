@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import './App.css'
 import CalculatorDisplay from './components/CalculatorDisplay'
 import CalculatorKeypad from './components/CalculatorKeypad'
-import { evaluateExpression, ExpressionError } from './utils/expression'
+import { safeEvaluateExpression } from './utils/expression'
 
 export default function App() {
   const [expression, setExpression] = useState<string>('')
@@ -89,29 +89,32 @@ export default function App() {
       case '.':
         insertDecimalPoint()
         break
-      case '=':
-        if (!expression) {
+      case '=': {
+        if (!expression.trim()) {
           setError('Nothing to evaluate')
           setResult('')
           setStatusLabel('Error')
           return
         }
-        try {
-          const sanitized = expression.replace(/×/g, '*').replace(/÷/g, '/')
-          const evalResult = evaluateExpression(sanitized)
-          const resultString = String(evalResult)
-          setResult(resultString)
-          setExpression(resultString)
-          setAns(evalResult)
-          setError('')
-          setStatusLabel('Result')
-        } catch (e) {
-          const message = e instanceof ExpressionError ? e.message : 'Error evaluating expression'
-          setError(message)
+
+        const sanitized = expression.replace(/×/g, '*').replace(/÷/g, '/')
+        const evaluation = safeEvaluateExpression(sanitized)
+
+        if (evaluation.error || evaluation.value === undefined) {
+          setError(evaluation.error ?? 'Unable to evaluate expression')
           setResult('')
           setStatusLabel('Error')
+          return
         }
+
+        const resultString = String(evaluation.value)
+        setResult(resultString)
+        setExpression(resultString)
+        setAns(evaluation.value)
+        setError('')
+        setStatusLabel('Result')
         break
+      }
       case 'Ans':
         if (ans !== '') {
           appendValue(String(ans))
