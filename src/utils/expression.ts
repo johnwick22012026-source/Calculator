@@ -7,6 +7,7 @@ type Token =
 
 const allowedCharactersRegex = /^[0-9+\-*/^%().\s]+$/
 const binaryOperatorSequenceRegex = /([+*/^]){2,}/
+const DIVISION_BY_ZERO_MESSAGE = 'Cannot divide by zero'
 
 function normalizeExpression(input: string): string {
   return input.replace(/×/g, '*').replace(/÷/g, '/')
@@ -158,7 +159,7 @@ export function evaluateExpression(input: string): number {
       if (op === '*') {
         newVal = lhs.value * rhs.value;
       } else {
-        if (rhs.value === 0) throw new ExpressionError('Division by zero');
+        if (rhs.value === 0) throw new ExpressionError(DIVISION_BY_ZERO_MESSAGE);
         newVal = lhs.value / rhs.value;
       }
       lhs = { value: newVal, isPercent: false };
