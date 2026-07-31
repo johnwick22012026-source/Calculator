@@ -45,8 +45,12 @@ describe('evaluateExpression', () => {
   })
 
   it('handles division by zero and non-finite results', () => {
-    expect(() => evaluateExpression('1/0')).toThrow(ExpressionError)
+    expect(() => evaluateExpression('1/0')).toThrow('Cannot divide by zero')
     expect(() => evaluateExpression('0^0')).not.toThrow() // Math.pow(0,0) == 1
+  })
+
+  it('rejects division by zero when denominator resolves to zero', () => {
+    expect(() => evaluateExpression('4/(2-2)')).toThrow('Cannot divide by zero')
   })
 
   // New tests for percentage and exponent edge cases and realistic scenarios
@@ -90,6 +94,12 @@ describe('evaluateExpression', () => {
 
     const divByZero = safeEvaluateExpression('1/0')
     expect(divByZero.value).toBeUndefined()
-    expect(divByZero.error).toBe('Division by zero')
+    expect(divByZero.error).toBe('Cannot divide by zero')
+  })
+
+  it('safeEvaluateExpression surfaces division by zero on computed denominators', () => {
+    const divByZero = safeEvaluateExpression('4/(2-2)')
+    expect(divByZero.value).toBeUndefined()
+    expect(divByZero.error).toBe('Cannot divide by zero')
   })
 })
