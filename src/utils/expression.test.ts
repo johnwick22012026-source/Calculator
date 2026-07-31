@@ -48,4 +48,34 @@ describe('evaluateExpression', () => {
     expect(() => evaluateExpression('1/0')).toThrow(ExpressionError)
     expect(() => evaluateExpression('0^0')).not.toThrow() // Math.pow(0,0) == 1
   })
+
+  // New tests for percentage and exponent edge cases and realistic scenarios
+  it('handles basic exponent cases and chained exponent scenarios', () => {
+    expect(evaluateExpression('2^3')).toBe(8)
+    expect(evaluateExpression('3^2^2')).toBe(81) // 3^(2^2)
+    expect(evaluateExpression('2^3*4')).toBe(32) // (2^3)*4
+    expect(evaluateExpression('2^(3*4)')).toBe(4096) // parentheses change precedence
+  })
+
+  it('handles realistic percentage scenarios including discount and percent-of-value', () => {
+    // discount scenario: subtract percentage of value
+    expect(evaluateExpression('150-20%')).toBeCloseTo(120)
+    // percent-of-value via multiplication
+    expect(evaluateExpression('20%*300')).toBeCloseTo(60)
+  })
+
+  it('verifies precedence interactions between percentage, power, and other operators', () => {
+    // percent parsed before multiplication and addition
+    expect(evaluateExpression('100+10%*2')).toBeCloseTo(100.2)
+    // power has higher precedence than percent postfix on right operand
+    expect(evaluateExpression('2^3%')).toBeCloseTo(Math.pow(2, 0.03))
+  })
+
+  it('supports chained percent operators as nested percent conversions', () => {
+    expect(evaluateExpression('200%%')).toBeCloseTo(0.02)
+  })
+
+  it('handles negative exponent values', () => {
+    expect(evaluateExpression('2^-3')).toBeCloseTo(0.125)
+  })
 })
