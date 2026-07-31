@@ -1,3 +1,11 @@
+/* Interaction State Styling Guidelines
+ * -------------------------------------
+ * Hover: visually indicate interactive elements on pointer hover.
+ * Focus-visible: clear outline for keyboard focus only (:focus-visible).
+ * Active: subtle press effect on activation.
+ * Disabled: reduced opacity and disable pointer interaction.
+ */
+
 :root {
   color-scheme: dark;
 }
@@ -94,7 +102,7 @@ body {
   word-wrap: break-word;
   color: #e0e7ff;
   letter-spacing: 0.01em;
-  transition: border 0.2s ease, padding 0.2s ease;
+  transition: border 0.2s ease, padding 0.2s ease, background 0.2s ease;
 }
 
 .display-expression--error {
@@ -102,6 +110,10 @@ body {
   border: 1px solid rgba(248, 113, 113, 0.8);
   padding: 0.85rem;
   background: rgba(248, 113, 113, 0.08);
+}
+
+.display-expression:hover {
+  background-color: rgba(255, 255, 255, 0.02);
 }
 
 .display-expression:focus-visible {
@@ -212,7 +224,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.15rem;
-  transition: border-color 0.2s ease, transform 0.1s ease, background 0.2s ease;
+  transition: border-color 0.2s ease, transform 0.1s ease, background 0.2s ease, filter 0.2s ease;
 }
 
 .scientific-control-button__label {
@@ -224,9 +236,12 @@ body {
   color: rgba(226, 232, 240, 0.8);
 }
 
-.scientific-control-button:hover {
-  border-color: rgba(59, 130, 246, 0.5);
-  transform: translateY(-1px);
+.scientific-control-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.scientific-control-button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .scientific-control-button:focus-visible {
@@ -316,8 +331,16 @@ body {
   font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  cursor: default;
-  transition: transform 0.1s ease, background 0.15s ease;
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease, filter 0.2s ease;
+}
+
+.keypad-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.keypad-button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 
 .keypad-button:focus-visible {
@@ -338,6 +361,11 @@ body {
 .keypad-button--tinted {
   background: linear-gradient(160deg, #1f2937, #111827);
   color: #f8fafc;
+}
+
+.keypad-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 @media (max-width: 600px) {
@@ -371,4 +399,10 @@ body {
   .keypad-helper-text {
     font-size: 0.72rem;
   }
+}
+
+/* Remove focus rings on mouse click */
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible) {
+  outline: none;
 }
