@@ -6,8 +6,66 @@
  * Disabled: reduced opacity and disable pointer interaction.
  */
 
+/* Global focus and interaction state variables */
 :root {
   color-scheme: dark;
+  /* Focus outline settings */
+  --focus-outline-width: 2px;
+  --focus-outline-style: solid;
+  --focus-outline-color: #38bdf8;
+  --focus-outline-offset: 2px;
+}
+
+/* Global interactive element defaults */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[role="link"] {
+  cursor: pointer;
+  transition: background 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              filter 0.2s ease,
+              transform 0.1s ease;
+}
+
+/* Hover state */
+button:hover:not(:disabled),
+a:hover:not([disabled]),
+[role="button"]:hover:not([disabled]):not([aria-disabled="true"]),
+[role="link"]:hover:not([disabled]):not([aria-disabled="true"]) {
+  filter: brightness(1.05);
+}
+
+/* Active (pressed) state */
+button:active:not(:disabled),
+a:active:not([disabled]),
+[role="button"]:active:not([disabled]):not([aria-disabled="true"]),
+[role="link"]:active:not([disabled]):not([aria-disabled="true"]) {
+  transform: translateY(1px);
+}
+
+/* Focus-visible state */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
+}
+
+/* Disabled state */
+button:disabled,
+[disabled],
+[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 * {
@@ -117,8 +175,8 @@ body {
 }
 
 .display-expression:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 2px;
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .display-feedback {
@@ -219,12 +277,10 @@ body {
   color: #e2e8f0;
   font-size: 0.95rem;
   text-align: center;
-  cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.15rem;
-  transition: border-color 0.2s ease, transform 0.1s ease, background 0.2s ease, filter 0.2s ease;
 }
 
 .scientific-control-button__label {
@@ -236,17 +292,17 @@ body {
   color: rgba(226, 232, 240, 0.8);
 }
 
-.scientific-control-button:hover:not(:disabled) {
+.scientific-control-button:hover:not(:disabled):not([aria-disabled="true"]) {
   filter: brightness(1.1);
 }
 
-.scientific-control-button:active:not(:disabled) {
+.scientific-control-button:active:not(:disabled):not([aria-disabled="true"]) {
   transform: translateY(1px);
 }
 
 .scientific-control-button:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 2px;
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .scientific-control-button--operator {
@@ -268,8 +324,8 @@ body {
 }
 
 .calculator-keypad:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 2px;
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .keypad-header {
@@ -331,8 +387,6 @@ body {
   font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  cursor: pointer;
-  transition: transform 0.1s ease, background 0.15s ease, filter 0.2s ease;
 }
 
 .keypad-button:hover:not(:disabled) {
@@ -344,8 +398,8 @@ body {
 }
 
 .keypad-button:focus-visible {
-  outline: 2px solid #38bdf8;
-  outline-offset: 2px;
+  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
+  outline-offset: var(--focus-outline-offset);
 }
 
 .keypad-button--primary {
