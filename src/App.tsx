@@ -3,11 +3,65 @@ import './App.css'
 import CalculatorDisplay from './components/CalculatorDisplay'
 import CalculatorKeypad from './components/CalculatorKeypad'
 import ScientificInputControls from './components/ScientificInputControls'
-import { safeEvaluateExpression } from './utils/expression'
+import {
+  ExpressionError,
+  safeEvaluateExpression,
+  validateExpressionInput
+} from './utils/expression'
 import { formatResult } from './utils/formatResult'
 import { mapKeyboardToCalculatorKey } from './utils/keyboard'
 
 type ScientificControlType = 'function' | 'constant' | 'operator'
+
+const INPUT_VALIDATION_HINTS: { pattern: string; hint: string }[] = [
+  {
+    pattern: 'Expression contains unsupported characters',
+    hint: 'Use numbers, parentheses, and supported operators or functions only.'
+  },
+  {
+    pattern: 'Expression cannot start with an operator',
+    hint: 'Start with a number, constant (π, e), or the Ans value.'
+  },
+  {
+    pattern: 'Expression cannot start with the percent operator',
+    hint: 'Place % after a number or grouped expression instead of at the beginning.'
+  },
+  {
+    pattern: 'Expression cannot end with an operator',
+    hint: 'Finish the expression with a number, constant, or closing parenthesis.'
+  },
+  {
+    pattern: 'Invalid operator sequence',
+    hint: 'Use only one operator between values (e.g., 2 + 3, not 2 ++ 3).'
+  },
+  {
+    pattern: 'Mismatched parentheses',
+    hint: 'Ensure every opening parenthesis has a corresponding closing parenthesis.'
+  },
+  {
+    pattern: 'Missing closing parenthesis',
+    hint: 'Close any open parentheses (including those following functions) before evaluating.'
+  },
+  {
+    pattern: 'Missing opening parenthesis',
+    hint: 'Include the opening parenthesis when calling a function (e.g., sin()).'
+  },
+  {
+    pattern: 'Invalid number',
+    hint: 'Check your numbers to make sure they use digits and at most one decimal point.'
+  },
+  {
+    pattern: 'Invalid number format',
+    hint: 'Each number may only contain one decimal point (e.g., 3.14).'
+  }
+]
+
+const DEFAULT_INPUT_HINT = 'Fix the expression so the calculator can parse it correctly.'
+
+function getInputValidationHint(message: string) {
+  const match = INPUT_VALIDATION_HINTS.find(entry => message.startsWith(entry.pattern))
+  return match?.hint ?? DEFAULT_INPUT_HINT
+}
 
 export default function App() {
   const [expression, setExpression] = useState<string>('')
@@ -15,6 +69,7 @@ export default function App() {
   const [statusLabel, setStatusLabel] = useState<string>('Waiting for input')
   const [ans, setAns] = useState<number | string>('')
   const [error, setError] = useState<string>('')
+  const [inputValidationMessage, setInputValidationMessage] = useState<string>('')
   const inputRef = useRef<HTMLInputElement>(null)
   const selectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
   const nextCaretRef = useRef<{ start: number; end: number } | null>(null)
@@ -24,6 +79,25 @@ export default function App() {
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    const normalized = expression.replace(/×/g, '*').replace(/÷/g, '/')
+    if (!normalized.trim()) {
+      setInputValidationMessage('')
+      return
+    }
+
+    try {
+      validateExpressionInput(normalized)
+      setInputValidationMessage('')
+    } catch (validationError) {
+      if (validationError instanceof ExpressionError) {
+        setInputValidationMessage(validationError.message)
+      } else {
+        setInputValidationMessage('Please adjust the expression to include only supported characters.')
+      }
+    }
+  }, [expression])
 
   // Restore caret and focus after controlled updates
   useLayoutEffect(() => {
@@ -188,6 +262,11 @@ export default function App() {
           return
         }
 
+        if (inputValidationMessage) {
+          applyEvaluationError(inputValidationMessage)
+          return
+        }
+
         const sanitized = expression.replace(/×/g, '*').replace(/÷/g, '/')
         const evaluation = safeEvaluateExpression(sanitized)
 
@@ -269,7 +348,8 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [])
 
-  const hasError = Boolean(error)
+  const hasError = Boolean(error || inputValidationMessage)
+  const inputValidationHint = inputValidationMessage ? getInputValidationHint(inputValidationMessage) : ''
 
   const onExpressionChange = (newExpr: string, selStart: number, selEnd: number) => {
     selectionRef.current = { start: selStart, end: selEnd }
@@ -287,6 +367,8 @@ export default function App() {
           statusLabel={statusLabel}
           error={error}
           hasError={hasError}
+          inputValidationMessage={inputValidationMessage}
+          inputValidationHint={inputValidationHint}
           onExpressionChange={onExpressionChange}
           onInputKeyDown={handleInputKeyDown}
         />
