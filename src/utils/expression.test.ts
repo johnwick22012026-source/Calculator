@@ -27,51 +27,44 @@ describe('evaluateExpression', () => {
   })
 
   it('handles percent operator as ratio and percent-of semantics', () => {
-    // standalone percent as ratio
     expect(evaluateExpression('50%')).toBeCloseTo(0.5)
-    // percent in multiplication/division yields ratio
     expect(evaluateExpression('200*10%')).toBeCloseTo(20)
     expect(evaluateExpression('200/10%')).toBeCloseTo(2000)
-    // percent in addition/subtraction is percent-of left operand
     expect(evaluateExpression('200+10%')).toBeCloseTo(220)
     expect(evaluateExpression('200-10%')).toBeCloseTo(180)
   })
 
   it('rejects or reports invalid syntax without crashing', () => {
-    const badInputs = ['++2', '2*/3', '2+(', 'abc', '.', '1..2']
+    const badInputs = ['++2', '2*/3', '2+(', '.', '1..2']
     badInputs.forEach(input => {
       expect(() => evaluateExpression(input)).toThrow(ExpressionError)
     })
+    expect(() => evaluateExpression('abc')).toThrow(ExpressionError)
   })
 
   it('handles division by zero and non-finite results', () => {
     expect(() => evaluateExpression('1/0')).toThrow('Cannot divide by zero')
-    expect(() => evaluateExpression('0^0')).not.toThrow() // Math.pow(0,0) == 1
+    expect(() => evaluateExpression('0^0')).not.toThrow()
   })
 
   it('rejects division by zero when denominator resolves to zero', () => {
     expect(() => evaluateExpression('4/(2-2)')).toThrow('Cannot divide by zero')
   })
 
-  // New tests for percentage and exponent edge cases and realistic scenarios
   it('handles basic exponent cases and chained exponent scenarios', () => {
     expect(evaluateExpression('2^3')).toBe(8)
-    expect(evaluateExpression('3^2^2')).toBe(81) // 3^(2^2)
-    expect(evaluateExpression('2^3*4')).toBe(32) // (2^3)*4
-    expect(evaluateExpression('2^(3*4)')).toBe(4096) // parentheses change precedence
+    expect(evaluateExpression('3^2^2')).toBe(81)
+    expect(evaluateExpression('2^3*4')).toBe(32)
+    expect(evaluateExpression('2^(3*4)')).toBe(4096)
   })
 
   it('handles realistic percentage scenarios including discount and percent-of-value', () => {
-    // discount scenario: subtract percentage of value
     expect(evaluateExpression('150-20%')).toBeCloseTo(120)
-    // percent-of-value via multiplication
     expect(evaluateExpression('20%*300')).toBeCloseTo(60)
   })
 
   it('verifies precedence interactions between percentage, power, and other operators', () => {
-    // percent parsed before multiplication and addition
     expect(evaluateExpression('100+10%*2')).toBeCloseTo(100.2)
-    // power has higher precedence than percent postfix on right operand
     expect(evaluateExpression('2^3%')).toBeCloseTo(Math.pow(2, 0.03))
   })
 
@@ -83,14 +76,36 @@ describe('evaluateExpression', () => {
     expect(evaluateExpression('2^-3')).toBeCloseTo(0.125)
   })
 
+  it('supports scientific functions and constants', () => {
+    expect(evaluateExpression('sqrt(9)')).toBe(3)
+    expect(evaluateExpression('square(5)')).toBe(25)
+    expect(evaluateExpression('cube(3)')).toBe(27)
+    expect(evaluateExpression('reciprocal(4)')).toBeCloseTo(0.25)
+    expect(evaluateExpression('abs(-7)')).toBe(7)
+    expect(evaluateExpression('ln(exp(1))')).toBeCloseTo(1)
+    expect(evaluateExpression('log10(1000)')).toBe(3)
+    expect(evaluateExpression('exp(2)')).toBeCloseTo(Math.exp(2))
+    expect(evaluateExpression('factorial(5)')).toBe(120)
+    expect(evaluateExpression('π+1')).toBeCloseTo(Math.PI + 1)
+    expect(evaluateExpression('e*2')).toBeCloseTo(Math.E * 2)
+  })
+
+  it('reports errors for invalid scientific function usage', () => {
+    expect(() => evaluateExpression('sqrt(-1)')).toThrow('Cannot compute square root of a negative value')
+    expect(() => evaluateExpression('reciprocal(0)')).toThrow('Cannot divide by zero')
+    expect(() => evaluateExpression('ln(0)')).toThrow('Natural logarithm is only defined for positive values')
+    expect(() => evaluateExpression('log10(-10)')).toThrow('Log10 is only defined for positive values')
+    expect(() => evaluateExpression('factorial(3.5)')).toThrow('Factorial is only defined for non-negative integers')
+  })
+
   it('safeEvaluateExpression reports syntax issues without throwing', () => {
     const invalidSequence = safeEvaluateExpression('++2')
     expect(invalidSequence.value).toBeUndefined()
     expect(invalidSequence.error).toBe('Invalid operator sequence')
 
-    const invalidCharacter = safeEvaluateExpression('5a3')
-    expect(invalidCharacter.value).toBeUndefined()
-    expect(invalidCharacter.error).toBe('Expression contains unsupported characters')
+    const invalidIdentifier = safeEvaluateExpression('5a3')
+    expect(invalidIdentifier.value).toBeUndefined()
+    expect(invalidIdentifier.error).toBe("Unknown function or constant 'a3'")
 
     const divByZero = safeEvaluateExpression('1/0')
     expect(divByZero.value).toBeUndefined()
