@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateExpression, ExpressionError } from './expression'
+import { evaluateExpression, ExpressionError, safeEvaluateExpression } from './expression'
 
 describe('evaluateExpression', () => {
   it('parses integers and decimals with whitespace tolerance', () => {
@@ -77,5 +77,19 @@ describe('evaluateExpression', () => {
 
   it('handles negative exponent values', () => {
     expect(evaluateExpression('2^-3')).toBeCloseTo(0.125)
+  })
+
+  it('safeEvaluateExpression reports syntax issues without throwing', () => {
+    const invalidSequence = safeEvaluateExpression('++2')
+    expect(invalidSequence.value).toBeUndefined()
+    expect(invalidSequence.error).toBe('Invalid operator sequence')
+
+    const invalidCharacter = safeEvaluateExpression('5a3')
+    expect(invalidCharacter.value).toBeUndefined()
+    expect(invalidCharacter.error).toBe('Expression contains unsupported characters')
+
+    const divByZero = safeEvaluateExpression('1/0')
+    expect(divByZero.value).toBeUndefined()
+    expect(divByZero.error).toBe('Division by zero')
   })
 })
