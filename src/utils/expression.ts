@@ -9,6 +9,9 @@ type Token =
 const allowedCharactersRegex = /^[0-9+\-*/^%().\sA-Za-z\u03c0]+$/
 const binaryOperatorSequenceRegex = /([+*/^]){2,}/
 const DIVISION_BY_ZERO_MESSAGE = 'Cannot divide by zero'
+const DEG_TO_RAD = Math.PI / 180
+const RAD_TO_DEG = 180 / Math.PI
+
 const SCIENTIFIC_FUNCTIONS = new Set([
   'sqrt',
   'square',
@@ -19,7 +22,13 @@ const SCIENTIFIC_FUNCTIONS = new Set([
   'ln',
   'log10',
   'exp',
-  'factorial'
+  'factorial',
+  'sin',
+  'cos',
+  'tan',
+  'asin',
+  'acos',
+  'atan'
 ])
 
 function normalizeExpression(input: string): string {
@@ -139,6 +148,14 @@ function tokenize(input: string): Token[] {
   return tokens
 }
 
+function toRadians(degrees: number): number {
+  return degrees * DEG_TO_RAD
+}
+
+function toDegrees(radians: number): number {
+  return radians * RAD_TO_DEG
+}
+
 function computeScientificFunction(name: string, value: number): number {
   switch (name) {
     case 'sqrt':
@@ -182,6 +199,35 @@ function computeScientificFunction(name: string, value: number): number {
         }
       }
       return result
+    case 'sin': {
+      const radians = toRadians(value)
+      return Math.sin(radians)
+    }
+    case 'cos': {
+      const radians = toRadians(value)
+      return Math.cos(radians)
+    }
+    case 'tan': {
+      const radians = toRadians(value)
+      if (Math.abs(Math.cos(radians)) < 1e-12) {
+        throw new ExpressionError('Tangent is undefined near 90° increments')
+      }
+      return Math.tan(radians)
+    }
+    case 'asin': {
+      if (value < -1 || value > 1) {
+        throw new ExpressionError('Inverse sine input must be between -1 and 1')
+      }
+      return toDegrees(Math.asin(value))
+    }
+    case 'acos': {
+      if (value < -1 || value > 1) {
+thrown new ExpressionError('Inverse cosine input must be between -1 and 1')
+      }
+      return toDegrees(Math.acos(value))
+    }
+    case 'atan':
+      return toDegrees(Math.atan(value))
     default:
       throw new ExpressionError(`Unknown function '${name}'`)
   }
