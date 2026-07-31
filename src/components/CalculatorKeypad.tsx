@@ -103,7 +103,8 @@ export default function CalculatorKeypad({ onKeyPress }: CalculatorKeypadProps) 
         <div className="keypad-operator-hint">^ for power, % for percentage</div>
       </div>
       <div className="keypad-helper-text">
-        Examples: <strong>200+10%</strong> (percent increment), <strong>2^8</strong> (power)
+        <p>Keyboard shortcuts: <strong>Enter</strong>=equals, <strong>Esc</strong>=clear, <strong>Backspace</strong>/Delete=backspace</p>
+        <p>Examples: <strong>200+10%</strong> (percent increment), <strong>2^8</strong> (power)</p>
       </div>
       <div className="keypad-grid keypad-grid--scientific" role="group" aria-label="Scientific controls">
         {scientificKeys.map(renderButton)}
