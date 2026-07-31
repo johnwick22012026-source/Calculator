@@ -33,7 +33,8 @@ const CalculatorKeypad: React.FC<KeypadProps> = ({ onKeyPress }) => (
   </div>
 )
 
-const isOperatorEnding = (input: string) => /[+\-×÷*/(]$/.test(input)
+const OPERATOR_KEYS = ['+', '-', '×', '÷']
+const isOperatorEnding = (input: string) => /[+\-×÷*/]$/.test(input)
 
 export default function App() {
   const [expression, setExpression] = useState<string>('')
@@ -55,33 +56,64 @@ export default function App() {
 
   const insertDecimalPoint = () => {
     setExpression(prev => {
+      let newExpr: string
       if (!prev || isOperatorEnding(prev)) {
-        return `${prev}0.`
+        newExpr = `${prev}0.`
+      } else {
+        const lastNumberMatch = prev.match(/(\d+(\.\d*)?)$/)
+        if (lastNumberMatch && lastNumberMatch[0].includes('.')) {
+          return prev
+        }
+        newExpr = `${prev}.`
       }
-
-      const lastNumberMatch = prev.match(/(\d+(\.\d*)?)$/)
-      if (lastNumberMatch && lastNumberMatch[0].includes('.')) {
-        return prev
-      }
-
-      return `${prev}.`
+      setResult('')
+      setError('')
+      setStatusLabel('Editing')
+      return newExpr
     })
-    setEditingFeedback()
   }
 
   const deleteLastCharacter = () => {
-    setExpression(prev => (prev.length ? prev.slice(0, -1) : ''))
-    setEditingFeedback()
+    setExpression(prev => {
+      const newExpr = prev ? prev.slice(0, -1) : ''
+      if (newExpr) {
+        setResult('')
+        setError('')
+        setStatusLabel('Editing')
+      } else {
+        setResult('')
+        setError('')
+        setStatusLabel('Waiting for input')
+      }
+      return newExpr
+    })
   }
 
   const clearExpression = () => {
     setExpression('')
     setResult('')
     setError('')
-    setStatusLabel('Cleared')
+    setStatusLabel('Waiting for input')
   }
 
   const handleKeyPress = (key: string) => {
+    if (OPERATOR_KEYS.includes(key)) {
+      // Prevent invalid operator sequences
+      if (!expression && key !== '-') {
+        // Cannot start with operator other than '-'
+        return
+      }
+      setExpression(prev => {
+        if (isOperatorEnding(prev)) {
+          // Replace the last operator with the new one
+          return prev.slice(0, -1) + key
+        }
+        return prev + key
+      })
+      setEditingFeedback()
+      return
+    }
+
     switch (key) {
       case 'AC':
         clearExpression()
@@ -120,6 +152,7 @@ export default function App() {
         }
         break
       default:
+        // Digit or other
         appendValue(key)
     }
   }
