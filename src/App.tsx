@@ -62,14 +62,12 @@ export default function App() {
 
   const handleKeyPress = (key: string) => {
     if (['+', '-', '×', '÷', '*', '/', '^'].includes(key)) {
-      // Prevent leading binary operators other than unary minus
       if (!expression && key !== '-') {
         return
       }
 
       setExpression(prev => {
         if (/[+\-×÷*/^]$/.test(prev)) {
-          // Don't replace a standalone unary minus with another operator
           if (prev.length === 1) {
             return prev
           }
@@ -103,6 +101,7 @@ export default function App() {
           const evalResult = evaluateExpression(sanitized)
           const resultString = String(evalResult)
           setResult(resultString)
+          setExpression(resultString)
           setAns(evalResult)
           setError('')
           setStatusLabel('Result')
