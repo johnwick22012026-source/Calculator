@@ -14,13 +14,13 @@ export default function App() {
   const setEditingFeedback = () => {
     setResult('')
     setError('')
-    setStatusLabel('Editing')
+    setStatusLabel('Editing expression')
   }
 
   const applyEvaluationError = (message: string) => {
     setResult('')
     setError(message)
-    setStatusLabel(message === 'Cannot divide by zero' ? 'Math error' : 'Error')
+    setStatusLabel('Error detected – fix expression')
   }
 
   const appendValue = (value: string) => {
@@ -31,7 +31,7 @@ export default function App() {
   const insertDecimalPoint = () => {
     setExpression(prev => {
       let newExpr: string
-      if (!prev || /[+\-×÷*/^]$/.test(prev)) {
+      if (!prev || /[+\-×÷*/^%]$/.test(prev)) {
         newExpr = `${prev}0.`
       } else {
         const lastNumberMatch = prev.match(/(\d+(\.\d*)?)$/)
@@ -67,13 +67,14 @@ export default function App() {
   }
 
   const handleKeyPress = (key: string) => {
-    if (['+', '-', '×', '÷', '*', '/', '^'].includes(key)) {
+    // Support basic operators and percentage
+    if (['+', '-', '×', '÷', '*', '/', '^', '%'].includes(key)) {
       if (!expression && key !== '-') {
         return
       }
 
       setExpression(prev => {
-        if (/[+\-×÷*/^]$/.test(prev)) {
+        if (/[+\-×÷*/^%]$/.test(prev)) {
           if (prev.length === 1) {
             return prev
           }
@@ -101,7 +102,9 @@ export default function App() {
           return
         }
 
-        const sanitized = expression.replace(/×/g, '*').replace(/÷/g, '/')
+        const sanitized = expression
+          .replace(/×/g, '*')
+          .replace(/÷/g, '/')
         const evaluation = safeEvaluateExpression(sanitized)
 
         if (evaluation.error || evaluation.value === undefined) {
@@ -127,6 +130,8 @@ export default function App() {
     }
   }
 
+  const hasError = Boolean(error)
+
   return (
     <main className="calculator-shell">
       <div className="calculator-panel">
@@ -135,6 +140,7 @@ export default function App() {
           result={result}
           statusLabel={statusLabel}
           error={error}
+          hasError={hasError}
         />
         <CalculatorKeypad onKeyPress={handleKeyPress} />
       </div>
