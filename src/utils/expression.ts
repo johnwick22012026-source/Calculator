@@ -3,11 +3,24 @@ export class ExpressionError extends Error {}
 type Token =
   | { type: 'number'; value: number }
   | { type: 'operator'; value: string }
-  | { type: 'paren'; value: '(' | ')' };
+  | { type: 'paren'; value: '(' | ')' }
+  | { type: 'identifier'; value: string }
 
-const allowedCharactersRegex = /^[0-9+\-*/^%().\s]+$/
+const allowedCharactersRegex = /^[0-9+\-*/^%().\sA-Za-z\u03c0]+$/
 const binaryOperatorSequenceRegex = /([+*/^]){2,}/
 const DIVISION_BY_ZERO_MESSAGE = 'Cannot divide by zero'
+const SCIENTIFIC_FUNCTIONS = new Set([
+  'sqrt',
+  'square',
+  'cube',
+  'reciprocal',
+  'abs',
+  'absolute',
+  'ln',
+  'log10',
+  'exp',
+  'factorial'
+])
 
 function normalizeExpression(input: string): string {
   return input.replace(/×/g, '*').replace(/÷/g, '/')
@@ -35,7 +48,7 @@ export function validateExpressionInput(rawExpression: string): void {
   }
 
   const lastChar = compact[compact.length - 1]
-  if (lastChar && /[+*/^]/.test(lastChar)) {
+  if (lastChar && /[+\-*/^]/.test(lastChar)) {
     throw new ExpressionError('Expression cannot end with an operator')
   }
 
@@ -62,170 +75,259 @@ export function validateExpressionInput(rawExpression: string): void {
 }
 
 function tokenize(input: string): Token[] {
-  const tokens: Token[] = [];
-  let i = 0;
+  const tokens: Token[] = []
+  let i = 0
+
   while (i < input.length) {
-    const ch = input[i];
+    const ch = input[i]
+
     if (ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r') {
-      i++;
-      continue;
+      i++
+      continue
     }
+
+    if (ch === 'π') {
+      tokens.push({ type: 'identifier', value: 'pi' })
+      i++
+      continue
+    }
+
     if ((ch >= '0' && ch <= '9') || ch === '.') {
-      let numStr = '';
-      let dotCount = 0;
+      let numStr = ''
+      let dotCount = 0
       while (
         i < input.length &&
         ((input[i] >= '0' && input[i] <= '9') || input[i] === '.')
       ) {
         if (input[i] === '.') {
-          dotCount++;
-          if (dotCount > 1) throw new ExpressionError('Invalid number format');
+          dotCount++
+          if (dotCount > 1) throw new ExpressionError('Invalid number format')
         }
-        numStr += input[i++];
+        numStr += input[i++]
       }
       if (numStr === '.' || numStr === '') {
-        throw new ExpressionError('Invalid number');
+        throw new ExpressionError('Invalid number')
       }
-      tokens.push({ type: 'number', value: parseFloat(numStr) });
-      continue;
+      tokens.push({ type: 'number', value: parseFloat(numStr) })
+      continue
     }
+
+    if (/[A-Za-z]/.test(ch)) {
+      let identifier = ''
+      while (i < input.length && /[A-Za-z0-9]/.test(input[i])) {
+        identifier += input[i++]
+      }
+      tokens.push({ type: 'identifier', value: identifier.toLowerCase() })
+      continue
+    }
+
     if ('+-*/^%'.includes(ch)) {
-      tokens.push({ type: 'operator', value: ch });
-      i++;
-      continue;
+      tokens.push({ type: 'operator', value: ch })
+      i++
+      continue
     }
+
     if (ch === '(' || ch === ')') {
-      tokens.push({ type: 'paren', value: ch });
-      i++;
-      continue;
+      tokens.push({ type: 'paren', value: ch })
+      i++
+      continue
     }
-    throw new ExpressionError(`Unexpected character '${ch}'`);
+
+    throw new ExpressionError(`Unexpected character '${ch}'`)
   }
-  return tokens;
+
+  return tokens
 }
 
-/**
- * Evaluate a mathematical expression string supporting +, -, *, /, ^, %, parentheses, unary minus
- * with operator precedence and percent semantics:
- *  - Percent (%) acts as a postfix operator: divides a number by 100,
- *    used in multiplication/division as ratio, and in addition/subtraction
- *    as percent-of the left operand (e.g., "100+10%" === 110).
- * Throws ExpressionError on invalid syntax or evaluation issues.
- */
+function computeScientificFunction(name: string, value: number): number {
+  switch (name) {
+    case 'sqrt':
+      if (value < 0) {
+        throw new ExpressionError('Cannot compute square root of a negative value')
+      }
+      return Math.sqrt(value)
+    case 'square':
+      return value * value
+    case 'cube':
+      return value * value * value
+    case 'reciprocal':
+      if (value === 0) {
+        throw new ExpressionError(DIVISION_BY_ZERO_MESSAGE)
+      }
+      return 1 / value
+    case 'abs':
+    case 'absolute':
+      return Math.abs(value)
+    case 'ln':
+      if (value <= 0) {
+        throw new ExpressionError('Natural logarithm is only defined for positive values')
+      }
+      return Math.log(value)
+    case 'log10':
+      if (value <= 0) {
+        throw new ExpressionError('Log10 is only defined for positive values')
+      }
+      return Math.log10 ? Math.log10(value) : Math.log(value) / Math.LN10
+    case 'exp':
+      return Math.exp(value)
+    case 'factorial':
+      if (!Number.isInteger(value) || value < 0) {
+        throw new ExpressionError('Factorial is only defined for non-negative integers')
+      }
+      let result = 1
+      for (let i = 2; i <= value; i++) {
+        result *= i
+        if (!isFinite(result)) {
+          throw new ExpressionError('Result is too large to compute')
+        }
+      }
+      return result
+    default:
+      throw new ExpressionError(`Unknown function '${name}'`)
+  }
+}
+
 export function evaluateExpression(input: string): number {
-  const tokens = tokenize(input);
-  let pos = 0;
+  const tokens = tokenize(input)
+  let pos = 0
 
   function peek(): Token | null {
-    return tokens[pos] ?? null;
+    return tokens[pos] ?? null
   }
 
   function consume(): Token {
-    const tok = tokens[pos];
-    if (!tok) throw new ExpressionError('Incomplete expression');
-    pos++;
-    return tok;
+    const tok = tokens[pos]
+    if (!tok) throw new ExpressionError('Incomplete expression')
+    pos++
+    return tok
   }
 
-  type Eval = { value: number; isPercent: boolean };
+  type Eval = { value: number; isPercent: boolean }
 
   function parseExpression(): Eval {
-    return parseAddSub();
+    return parseAddSub()
   }
 
   function parseAddSub(): Eval {
-    let lhs = parseMulDiv();
+    let lhs = parseMulDiv()
     while (peek()?.type === 'operator' && (peek()!.value === '+' || peek()!.value === '-')) {
-      const op = consume().value;
-      const rhs = parseMulDiv();
-      let newVal: number;
+      const op = consume().value
+      const rhs = parseMulDiv()
+      let newVal: number
       if (rhs.isPercent) {
-        // percent of lhs
-        newVal = op === '+' ? lhs.value + lhs.value * rhs.value : lhs.value - lhs.value * rhs.value;
+        newVal = op === '+' ? lhs.value + lhs.value * rhs.value : lhs.value - lhs.value * rhs.value
       } else {
-        newVal = op === '+' ? lhs.value + rhs.value : lhs.value - rhs.value;
+        newVal = op === '+' ? lhs.value + rhs.value : lhs.value - rhs.value
       }
-      lhs = { value: newVal, isPercent: false };
+      lhs = { value: newVal, isPercent: false }
     }
-    return lhs;
+    return lhs
   }
 
   function parseMulDiv(): Eval {
-    let lhs = parseUnary();
+    let lhs = parseUnary()
     while (peek()?.type === 'operator' && (peek()!.value === '*' || peek()!.value === '/')) {
-      const op = consume().value;
-      const rhs = parseUnary();
-      let newVal: number;
+      const op = consume().value
+      const rhs = parseUnary()
+      let newVal: number
       if (op === '*') {
-        newVal = lhs.value * rhs.value;
+        newVal = lhs.value * rhs.value
       } else {
-        if (rhs.value === 0) throw new ExpressionError(DIVISION_BY_ZERO_MESSAGE);
-        newVal = lhs.value / rhs.value;
+        if (rhs.value === 0) throw new ExpressionError(DIVISION_BY_ZERO_MESSAGE)
+        newVal = lhs.value / rhs.value
       }
-      lhs = { value: newVal, isPercent: false };
+      lhs = { value: newVal, isPercent: false }
     }
-    return lhs;
+    return lhs
   }
 
   function parseUnary(): Eval {
     if (peek()?.type === 'operator' && peek()!.value === '-') {
-      consume();
-      const res = parseUnary();
-      return { value: -res.value, isPercent: res.isPercent };
+      consume()
+      const res = parseUnary()
+      return { value: -res.value, isPercent: res.isPercent }
     }
-    return parsePower();
+    return parsePower()
   }
 
   function parsePower(): Eval {
-    let lhs = parsePercent();
+    let lhs = parsePercent()
     if (peek()?.type === 'operator' && peek()!.value === '^') {
-      consume();
-      const rhs = parseUnary(); // handle unary minus in exponent
-      lhs = { value: Math.pow(lhs.value, rhs.value), isPercent: false };
+      consume()
+      const rhs = parseUnary()
+      lhs = { value: Math.pow(lhs.value, rhs.value), isPercent: false }
     }
-    return lhs;
+    return lhs
   }
 
   function parsePercent(): Eval {
-    let lhs = parsePrimary();
+    let lhs = parsePrimary()
     while (peek()?.type === 'operator' && peek()!.value === '%') {
-      // postfix percent: convert to ratio and mark percent flag
-      consume();
-      lhs = { value: lhs.value / 100, isPercent: true };
+      consume()
+      lhs = { value: lhs.value / 100, isPercent: true }
     }
-    return lhs;
+    return lhs
   }
 
   function parsePrimary(): Eval {
-    const tok = peek();
-    if (!tok) throw new ExpressionError('Incomplete expression');
+    const tok = peek()
+    if (!tok) throw new ExpressionError('Incomplete expression')
     if (tok.type === 'paren' && tok.value === ')') {
-      throw new ExpressionError('Mismatched parentheses');
+      throw new ExpressionError('Mismatched parentheses')
     }
     if (tok.type === 'number') {
-      consume();
-      return { value: tok.value, isPercent: false };
+      consume()
+      return { value: tok.value, isPercent: false }
+    }
+    if (tok.type === 'identifier') {
+      const name = tok.value
+      if (name === 'pi') {
+        consume()
+        return { value: Math.PI, isPercent: false }
+      }
+      if (name === 'e') {
+        consume()
+        return { value: Math.E, isPercent: false }
+      }
+      if (!SCIENTIFIC_FUNCTIONS.has(name)) {
+        throw new ExpressionError(`Unknown function or constant '${name}'`)
+      }
+      return parseFunctionCall(name)
     }
     if (tok.type === 'paren' && tok.value === '(') {
-      consume();
-      const inside = parseExpression();
+      consume()
+      const inside = parseExpression()
       if (!peek() || peek()!.type !== 'paren' || peek()!.value !== ')') {
-        throw new ExpressionError('Missing closing parenthesis');
+        throw new ExpressionError('Missing closing parenthesis')
       }
-      consume();
-      return { value: inside.value, isPercent: inside.isPercent };
+      consume()
+      return { value: inside.value, isPercent: inside.isPercent }
     }
-    throw new ExpressionError('Invalid syntax');
+    throw new ExpressionError('Invalid syntax')
   }
 
-  const finalEval = parseExpression();
+  function parseFunctionCall(name: string): Eval {
+    if (!peek() || peek()!.type !== 'paren' || peek()!.value !== '(') {
+      throw new ExpressionError(`Missing opening parenthesis for function '${name}'`)
+    }
+    consume()
+    const argument = parseExpression()
+    if (!peek() || peek()!.type !== 'paren' || peek()!.value !== ')') {
+      throw new ExpressionError(`Missing closing parenthesis for function '${name}'`)
+    }
+    consume()
+    const computed = computeScientificFunction(name, argument.value)
+    return { value: computed, isPercent: false }
+  }
+
+  const finalEval = parseExpression()
   if (pos < tokens.length) {
-    throw new ExpressionError('Invalid syntax');
+    throw new ExpressionError('Invalid syntax')
   }
   if (!isFinite(finalEval.value)) {
-    throw new ExpressionError('Result is not a finite number');
+    throw new ExpressionError('Result is not a finite number')
   }
-  return finalEval.value;
+  return finalEval.value
 }
 
 export function safeEvaluateExpression(rawExpression: string): { value?: number; error?: string } {
