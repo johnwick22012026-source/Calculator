@@ -13,6 +13,8 @@ export default function CalculatorDisplay({
   statusLabel = 'Ready',
   error = ''
 }: CalculatorDisplayProps) {
+  const hasError = Boolean(error)
+
   return (
     <section className="calculator-display" aria-label="Calculator display region">
       <div className="display-header">
@@ -22,15 +24,14 @@ export default function CalculatorDisplay({
       <div className="display-expression" aria-live="polite">
         {expression || 'Enter an expression'}
       </div>
-      {error ? (
-        <div className="display-error" role="alert">
-          {error}
-        </div>
-      ) : (
-        <div className="display-result" aria-live="polite">
+      <div className="display-feedback" aria-live={hasError ? 'assertive' : 'polite'}>
+        <div className="display-result" aria-hidden={hasError}>
           {result || 'Result area'}
         </div>
-      )}
+        <div className={`display-error ${hasError ? 'display-error--visible' : ''}`} role="alert">
+          {hasError ? error : ''}
+        </div>
+      </div>
     </section>
   )
 }
