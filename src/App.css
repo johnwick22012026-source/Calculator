@@ -218,6 +218,11 @@ body {
   gap: 0.6rem;
 }
 
+.keypad-grid--scientific {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.55rem;
+}
+
 .keypad-button {
   border: none;
   border-radius: 14px;
@@ -256,6 +261,10 @@ body {
 
   .keypad-grid {
     gap: 0.5rem;
+  }
+
+  .keypad-grid--scientific {
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   }
 
   .keypad-button {
