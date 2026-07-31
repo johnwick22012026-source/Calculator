@@ -26,6 +26,17 @@ describe('evaluateExpression', () => {
     expect(evaluateExpression('2.5*4')).toBe(10)
   })
 
+  it('handles percent operator as ratio and percent-of semantics', () => {
+    // standalone percent as ratio
+    expect(evaluateExpression('50%')).toBeCloseTo(0.5)
+    // percent in multiplication/division yields ratio
+    expect(evaluateExpression('200*10%')).toBeCloseTo(20)
+    expect(evaluateExpression('200/10%')).toBeCloseTo(2000)
+    // percent in addition/subtraction is percent-of left operand
+    expect(evaluateExpression('200+10%')).toBeCloseTo(220)
+    expect(evaluateExpression('200-10%')).toBeCloseTo(180)
+  })
+
   it('rejects or reports invalid syntax without crashing', () => {
     const badInputs = ['++2', '2*/3', '2+(', 'abc', '.', '1..2']
     badInputs.forEach(input => {
