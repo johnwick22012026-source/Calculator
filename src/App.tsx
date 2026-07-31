@@ -3,6 +3,7 @@ import './App.css'
 import CalculatorDisplay from './components/CalculatorDisplay'
 import CalculatorKeypad from './components/CalculatorKeypad'
 import { safeEvaluateExpression } from './utils/expression'
+import { formatResult } from './utils/formatResult'
 
 export default function App() {
   const [expression, setExpression] = useState<string>('')
@@ -152,7 +153,7 @@ export default function App() {
           return
         }
 
-        const resultString = String(evaluation.value)
+        const resultString = formatResult(evaluation.value)
         setResult(resultString)
         setExpression(resultString)
         setAns(evaluation.value)
