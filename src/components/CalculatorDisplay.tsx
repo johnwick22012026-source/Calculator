@@ -8,6 +8,7 @@ type CalculatorDisplayProps = {
   hasError?: boolean
   angleModeLabel?: string
   onExpressionChange: (expr: string, selStart: number, selEnd: number) => void
+  onInputKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void
 }
 
 const CalculatorDisplay = forwardRef<HTMLInputElement, CalculatorDisplayProps>(
@@ -19,7 +20,8 @@ const CalculatorDisplay = forwardRef<HTMLInputElement, CalculatorDisplayProps>(
       error = '',
       hasError = false,
       angleModeLabel = 'Degrees',
-      onExpressionChange
+      onExpressionChange,
+      onInputKeyDown
     },
     ref
   ) => {
@@ -57,6 +59,7 @@ const CalculatorDisplay = forwardRef<HTMLInputElement, CalculatorDisplayProps>(
           value={expression}
           onChange={handleChange}
           onSelect={handleSelect}
+          onKeyDown={onInputKeyDown}
           autoComplete="off"
         />
         <div className="display-feedback" aria-live={hasError ? 'assertive' : 'polite'}>
