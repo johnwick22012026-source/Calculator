@@ -84,10 +84,18 @@ describe('evaluateExpression', () => {
     expect(evaluateExpression('abs(-7)')).toBe(7)
     expect(evaluateExpression('ln(exp(1))')).toBeCloseTo(1)
     expect(evaluateExpression('log10(1000)')).toBe(3)
+    expect(evaluateExpression('log(100)')).toBe(2)
     expect(evaluateExpression('exp(2)')).toBeCloseTo(Math.exp(2))
     expect(evaluateExpression('factorial(5)')).toBe(120)
     expect(evaluateExpression('π+1')).toBeCloseTo(Math.PI + 1)
     expect(evaluateExpression('e*2')).toBeCloseTo(Math.E * 2)
+  })
+
+  it('supports nested scientific functions and operator precedence', () => {
+    expect(evaluateExpression('sqrt(1 + sin(30))')).toBeCloseTo(
+      Math.sqrt(1 + Math.sin(Math.PI / 6)),
+    )
+    expect(evaluateExpression('log(100) + sin(30)^2')).toBeCloseTo(2.25)
   })
 
   it('reports errors for invalid scientific function usage', () => {
@@ -116,5 +124,15 @@ describe('evaluateExpression', () => {
     const divByZero = safeEvaluateExpression('4/(2-2)')
     expect(divByZero.value).toBeUndefined()
     expect(divByZero.error).toBe('Cannot divide by zero')
+  })
+
+  it('safeEvaluateExpression reports incomplete scientific function usage', () => {
+    const missingArgument = safeEvaluateExpression('sin(')
+    expect(missingArgument.value).toBeUndefined()
+    expect(missingArgument.error).toBe('Incomplete expression')
+
+    const missingOperand = safeEvaluateExpression('sqrt(1 + )')
+    expect(missingOperand.value).toBeUndefined()
+    expect(missingOperand.error).toBe('Mismatched parentheses')
   })
 })
