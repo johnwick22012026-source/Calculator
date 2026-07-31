@@ -457,6 +457,63 @@ body {
   }
 }
 
+@media (max-width: 480px) {
+  body {
+    min-height: auto;
+  }
+
+  .calculator-shell {
+    align-items: stretch;
+    padding: 1rem;
+  }
+
+  .calculator-panel {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 22px;
+    padding: 1rem;
+    gap: 1.25rem;
+  }
+
+  .calculator-display {
+    padding: 1rem;
+  }
+
+  .scientific-controls {
+    padding: 0.85rem 1rem;
+  }
+
+  .scientific-controls__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .scientific-control-button {
+    padding: 0.8rem;
+    font-size: 0.9rem;
+    min-height: 56px;
+  }
+
+  .calculator-keypad {
+    padding: 0.85rem 1rem;
+  }
+
+  .keypad-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+  }
+
+  .keypad-grid--scientific {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  .keypad-button {
+    font-size: 1rem;
+    padding: 1rem 0;
+    min-height: 54px;
+  }
+}
+
 /* Remove focus rings on mouse click */
 button:focus:not(:focus-visible),
 input:focus:not(:focus-visible) {
