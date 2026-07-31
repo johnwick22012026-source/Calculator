@@ -4,15 +4,15 @@ type CalculatorDisplayProps = {
   expression?: string
   result?: string
   statusLabel?: string
+  error?: string
 }
 
 export default function CalculatorDisplay({
   expression = '',
   result = '',
   statusLabel = 'Ready',
+  error = ''
 }: CalculatorDisplayProps) {
-  const hasError = statusLabel === 'Error'
-
   return (
     <section className="calculator-display" aria-label="Calculator display region">
       <div className="display-header">
@@ -22,9 +22,9 @@ export default function CalculatorDisplay({
       <div className="display-expression" aria-live="polite">
         {expression || 'Enter an expression'}
       </div>
-      {hasError ? (
+      {error ? (
         <div className="display-error" role="alert">
-          {result || 'Error'}
+          {error}
         </div>
       ) : (
         <div className="display-result" aria-live="polite">
