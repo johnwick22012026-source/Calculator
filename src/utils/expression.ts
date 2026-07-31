@@ -20,6 +20,7 @@ const SCIENTIFIC_FUNCTIONS = new Set([
   'abs',
   'absolute',
   'ln',
+  'log',
   'log10',
   'exp',
   'factorial',
@@ -117,6 +118,21 @@ function tokenize(input: string): Token[] {
       if (numStr === '.' || numStr === '') {
         throw new ExpressionError('Invalid number')
       }
+
+      if (i < input.length) {
+        const nextChar = input[i]
+        if (nextChar === 'π' || /[A-Za-z]/.test(nextChar)) {
+          let identifier = ''
+          let j = i
+          while (j < input.length && /[A-Za-z0-9π]/.test(input[j])) {
+            identifier += input[j++] // eslint-disable-line no-plusplus
+          }
+          throw new ExpressionError(
+            `Missing operator before identifier or constant '${identifier}'`
+          )
+        }
+      }
+
       tokens.push({ type: 'number', value: parseFloat(numStr) })
       continue
     }
@@ -180,6 +196,7 @@ function computeScientificFunction(name: string, value: number): number {
         throw new ExpressionError('Natural logarithm is only defined for positive values')
       }
       return Math.log(value)
+    case 'log':
     case 'log10':
       if (value <= 0) {
         throw new ExpressionError('Log10 is only defined for positive values')
@@ -356,6 +373,10 @@ export function evaluateExpression(input: string): number {
 
   const finalValue = parseExpression()
   if (pos < tokens.length) {
+    const leftover = tokens[pos]
+    if (leftover?.type === 'identifier') {
+      throw new ExpressionError(`Invalid identifier or constant '${leftover.value}'`)
+    }
     throw new ExpressionError('Invalid syntax')
   }
   if (!isFinite(finalValue)) {
