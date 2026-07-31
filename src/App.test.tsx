@@ -99,3 +99,33 @@ describe('Nested expression evaluation and validation feedback', () => {
     expect(screen.getByText('Error detected – fix expression')).toBeInTheDocument()
   })
 })
+
+// New tests for scientific insertion UI
+
+describe('Scientific input controls', () => {
+  it('inserts function tokens without clearing existing input', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await clickKey(user, '2')
+    const sinControl = screen.getByRole('button', { name: 'Insert sin()' })
+    await user.click(sinControl)
+    await clickKey(user, '3')
+
+    const input = screen.getByLabelText('Expression input') as HTMLInputElement
+    expect(input.value).toBe('2 sin(3')
+  })
+
+  it('inserts constants with spacing to avoid token collisions', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    const piControl = screen.getByRole('button', { name: 'Insert π' })
+    await user.click(piControl)
+    await clickKey(user, '÷')
+    await clickKey(user, '2')
+
+    const input = screen.getByLabelText('Expression input') as HTMLInputElement
+    expect(input.value).toBe('π÷2')
+  })
+})
