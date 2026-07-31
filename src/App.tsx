@@ -1,10 +1,11 @@
-import React, { useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import './App.css'
 import CalculatorDisplay from './components/CalculatorDisplay'
 import CalculatorKeypad from './components/CalculatorKeypad'
 import ScientificInputControls from './components/ScientificInputControls'
 import { safeEvaluateExpression } from './utils/expression'
 import { formatResult } from './utils/formatResult'
+import { mapKeyboardToCalculatorKey } from './utils/keyboard'
 
 type ScientificControlType = 'function' | 'constant' | 'operator'
 
@@ -17,6 +18,7 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement>(null)
   const selectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
   const nextCaretRef = useRef<{ start: number; end: number } | null>(null)
+  const handleKeyPressRef = useRef<(key: string) => void>(() => {})
 
   // Restore caret and focus after controlled updates
   useLayoutEffect(() => {
@@ -209,6 +211,35 @@ export default function App() {
         appendValue(key)
     }
   }
+
+  useEffect(() => {
+    handleKeyPressRef.current = handleKeyPress
+  }, [handleKeyPress])
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (event: KeyboardEvent) => {
+      if (
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey
+      ) {
+        return
+      }
+
+      const mappedKey = mapKeyboardToCalculatorKey(event.key)
+      if (!mappedKey) {
+        return
+      }
+
+      event.preventDefault()
+      handleKeyPressRef.current(mappedKey)
+      inputRef.current?.focus()
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown)
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
+  }, [])
 
   const hasError = Boolean(error)
 
