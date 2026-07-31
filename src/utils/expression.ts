@@ -5,6 +5,61 @@ type Token =
   | { type: 'operator'; value: string }
   | { type: 'paren'; value: '(' | ')' };
 
+const allowedCharactersRegex = /^[0-9+\-*/^%().\s]+$/
+const binaryOperatorSequenceRegex = /([+*/^]){2,}/
+
+function normalizeExpression(input: string): string {
+  return input.replace(/×/g, '*').replace(/÷/g, '/')
+}
+
+export function validateExpressionInput(rawExpression: string): void {
+  const normalized = normalizeExpression(rawExpression)
+  const trimmed = normalized.trim()
+  if (!trimmed) {
+    throw new ExpressionError('Expression cannot be empty')
+  }
+
+  if (!allowedCharactersRegex.test(trimmed)) {
+    throw new ExpressionError('Expression contains unsupported characters')
+  }
+
+  const compact = trimmed.replace(/\s+/g, '')
+
+  if (compact[0] && /[+*/^]/.test(compact[0])) {
+    throw new ExpressionError('Expression cannot start with an operator')
+  }
+
+  if (compact[0] === '%') {
+    throw new ExpressionError('Expression cannot start with the percent operator')
+  }
+
+  const lastChar = compact[compact.length - 1]
+  if (lastChar && /[+*/^]/.test(lastChar)) {
+    throw new ExpressionError('Expression cannot end with an operator')
+  }
+
+  if (binaryOperatorSequenceRegex.test(compact)) {
+    throw new ExpressionError('Invalid operator sequence')
+  }
+
+  let depth = 0
+  for (const char of compact) {
+    if (char === '(') {
+      depth++
+    }
+    if (char === ')') {
+      depth--
+      if (depth < 0) {
+        throw new ExpressionError('Mismatched parentheses')
+      }
+    }
+  }
+
+  if (depth !== 0) {
+    throw new ExpressionError('Mismatched parentheses')
+  }
+}
+
 function tokenize(input: string): Token[] {
   const tokens: Token[] = [];
   let i = 0;
@@ -124,7 +179,7 @@ export function evaluateExpression(input: string): number {
     let lhs = parsePercent();
     if (peek()?.type === 'operator' && peek()!.value === '^') {
       consume();
-      const rhs = parsePower(); // right-associative
+      const rhs = parseUnary(); // handle unary minus in exponent
       lhs = { value: Math.pow(lhs.value, rhs.value), isPercent: false };
     }
     return lhs;
@@ -170,4 +225,18 @@ export function evaluateExpression(input: string): number {
     throw new ExpressionError('Result is not a finite number');
   }
   return finalEval.value;
+}
+
+export function safeEvaluateExpression(rawExpression: string): { value?: number; error?: string } {
+  const normalized = normalizeExpression(rawExpression)
+  try {
+    validateExpressionInput(normalized)
+    const value = evaluateExpression(normalized)
+    return { value }
+  } catch (error) {
+    if (error instanceof ExpressionError) {
+      return { error: error.message }
+    }
+    return { error: 'Unexpected error while evaluating expression' }
+  }
 }
