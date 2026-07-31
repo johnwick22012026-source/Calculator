@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 
 type KeypadButton = {
   label: string
@@ -23,6 +23,8 @@ const scientificKeys: KeypadButton[] = [
 const coreKeys: KeypadButton[] = [
   { label: 'AC', variant: 'secondary' },
   { label: 'DEL', variant: 'secondary' },
+  { label: '(', variant: 'tinted' },
+  { label: ')', variant: 'tinted' },
   { label: '%', variant: 'tinted' },
   { label: '÷', variant: 'primary' },
   { label: '7', variant: 'tinted' },
@@ -48,46 +50,43 @@ type CalculatorKeypadProps = {
 }
 
 export default function CalculatorKeypad({ onKeyPress }: CalculatorKeypadProps) {
-  // Handle keyboard input globally to match UI copy instructions
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      let mappedKey: string | undefined
-      const { key } = e
+  // Handle keyboard input only when this keypad section is focused
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    let mappedKey: string | undefined
+    const { key } = e
 
-      switch (key) {
-        case 'Enter':
-          mappedKey = '='
-          break
-        case 'Backspace':
-          mappedKey = 'DEL'
-          break
-        case 'Escape':
-          mappedKey = 'AC'
-          break
-        case '*':
-          mappedKey = '×'
-          break
-        case '/':
-          mappedKey = '÷'
-          break
-        default:
-          // digits, dot, operators, percent, power, equals
-          if (/^[0-9]$/.test(key) || ['.', '+', '-', '%', '^', '='].includes(key)) {
-            mappedKey = key
-          }
-      }
-
-      if (mappedKey) {
-        e.preventDefault()
-        onKeyPress(mappedKey)
-      }
+    switch (key) {
+      case 'Enter':
+        mappedKey = '='
+        break
+      case 'Backspace':
+        mappedKey = 'DEL'
+        break
+      case 'Escape':
+        mappedKey = 'AC'
+        break
+      case '*':
+        mappedKey = '×'
+        break
+      case '/':
+        mappedKey = '÷'
+        break
+      case '(': 
+      case ')':
+        mappedKey = key
+        break
+      default:
+        // digits, dot, operators, percent, power, equals
+        if (/^[0-9]$/.test(key) || ['.', '+', '-', '%', '^', '='].includes(key)) {
+          mappedKey = key
+        }
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
+    if (mappedKey) {
+      e.preventDefault()
+      onKeyPress(mappedKey)
     }
-  }, [onKeyPress])
+  }
 
   const renderButton = (key: KeypadButton) => {
     const value = key.value ?? key.label
@@ -109,6 +108,7 @@ export default function CalculatorKeypad({ onKeyPress }: CalculatorKeypadProps) 
       className="calculator-keypad"
       aria-label="Calculator keypad region"
       tabIndex={0}
+      onKeyDown={handleKeyDown}
     >
       <div className="keypad-header">
         <div>
