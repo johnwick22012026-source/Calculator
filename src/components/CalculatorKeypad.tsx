@@ -7,17 +7,24 @@ type KeypadButton = {
 }
 
 const scientificKeys: KeypadButton[] = [
+  { label: 'sin', value: 'sin(', variant: 'secondary' },
+  { label: 'cos', value: 'cos(', variant: 'secondary' },
+  { label: 'tan', value: 'tan(', variant: 'secondary' },
+  { label: 'asin', value: 'asin(', variant: 'secondary' },
+  { label: 'acos', value: 'acos(', variant: 'secondary' },
+  { label: 'atan', value: 'atan(', variant: 'secondary' },
   { label: 'sqrt', value: 'sqrt(', variant: 'secondary' },
-  { label: 'square', value: 'square(', variant: 'secondary' },
-  { label: 'cube', value: 'cube(', variant: 'secondary' },
-  { label: 'reciprocal', value: 'reciprocal(', variant: 'secondary' },
-  { label: 'abs', value: 'abs(', variant: 'secondary' },
+  { label: 'log', value: 'log(', variant: 'secondary' },
   { label: 'ln', value: 'ln(', variant: 'secondary' },
   { label: 'log10', value: 'log10(', variant: 'secondary' },
   { label: 'exp', value: 'exp(', variant: 'secondary' },
+  { label: 'abs', value: 'abs(', variant: 'secondary' },
+  { label: 'square', value: 'square(', variant: 'secondary' },
+  { label: 'cube', value: 'cube(', variant: 'secondary' },
+  { label: 'reciprocal', value: 'reciprocal(', variant: 'secondary' },
   { label: 'factorial', value: 'factorial(', variant: 'secondary' },
   { label: 'π', value: 'π', variant: 'tinted' },
-  { label: 'e', value: 'e', variant: 'tinted' },
+  { label: 'e', value: 'e', variant: 'tinted' }
 ]
 
 const coreKeys: KeypadButton[] = [
@@ -42,7 +49,7 @@ const coreKeys: KeypadButton[] = [
   { label: '0', variant: 'tinted' },
   { label: '.', variant: 'tinted' },
   { label: '=', variant: 'primary' },
-  { label: 'Ans', variant: 'secondary' },
+  { label: 'Ans', variant: 'secondary' }
 ]
 
 type CalculatorKeypadProps = {
@@ -71,7 +78,7 @@ export default function CalculatorKeypad({ onKeyPress }: CalculatorKeypadProps) 
       case '/':
         mappedKey = '÷'
         break
-      case '(': 
+      case '(':
       case ')':
         mappedKey = key
         break
