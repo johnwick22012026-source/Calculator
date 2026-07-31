@@ -222,7 +222,7 @@ function computeScientificFunction(name: string, value: number): number {
     }
     case 'acos': {
       if (value < -1 || value > 1) {
-thrown new ExpressionError('Inverse cosine input must be between -1 and 1')
+        throw new ExpressionError('Inverse cosine input must be between -1 and 1')
       }
       return toDegrees(Math.acos(value))
     }
@@ -248,74 +248,63 @@ export function evaluateExpression(input: string): number {
     return tok
   }
 
-  type Eval = { value: number; isPercent: boolean }
-
-  function parseExpression(): Eval {
+  function parseExpression(): number {
     return parseAddSub()
   }
 
-  function parseAddSub(): Eval {
+  function parseAddSub(): number {
     let lhs = parseMulDiv()
     while (peek()?.type === 'operator' && (peek()!.value === '+' || peek()!.value === '-')) {
       const op = consume().value
       const rhs = parseMulDiv()
-      let newVal: number
-      if (rhs.isPercent) {
-        newVal = op === '+' ? lhs.value + lhs.value * rhs.value : lhs.value - lhs.value * rhs.value
-      } else {
-        newVal = op === '+' ? lhs.value + rhs.value : lhs.value - rhs.value
-      }
-      lhs = { value: newVal, isPercent: false }
+      lhs = op === '+' ? lhs + rhs : lhs - rhs
     }
     return lhs
   }
 
-  function parseMulDiv(): Eval {
+  function parseMulDiv(): number {
     let lhs = parseUnary()
     while (peek()?.type === 'operator' && (peek()!.value === '*' || peek()!.value === '/')) {
       const op = consume().value
       const rhs = parseUnary()
-      let newVal: number
       if (op === '*') {
-        newVal = lhs.value * rhs.value
+        lhs *= rhs
       } else {
-        if (rhs.value === 0) throw new ExpressionError(DIVISION_BY_ZERO_MESSAGE)
-        newVal = lhs.value / rhs.value
+        if (rhs === 0) throw new ExpressionError(DIVISION_BY_ZERO_MESSAGE)
+        lhs /= rhs
       }
-      lhs = { value: newVal, isPercent: false }
     }
     return lhs
   }
 
-  function parseUnary(): Eval {
+  function parseUnary(): number {
     if (peek()?.type === 'operator' && peek()!.value === '-') {
       consume()
-      const res = parseUnary()
-      return { value: -res.value, isPercent: res.isPercent }
+      return -parseUnary()
     }
     return parsePower()
   }
 
-  function parsePower(): Eval {
+  function parsePower(): number {
     let lhs = parsePercent()
     if (peek()?.type === 'operator' && peek()!.value === '^') {
       consume()
       const rhs = parseUnary()
-      lhs = { value: Math.pow(lhs.value, rhs.value), isPercent: false }
+      lhs = Math.pow(lhs, rhs)
     }
     return lhs
   }
 
-  function parsePercent(): Eval {
+  function parsePercent(): number {
     let lhs = parsePrimary()
     while (peek()?.type === 'operator' && peek()!.value === '%') {
       consume()
-      lhs = { value: lhs.value / 100, isPercent: true }
+      lhs = lhs / 100
     }
     return lhs
   }
 
-  function parsePrimary(): Eval {
+  function parsePrimary(): number {
     const tok = peek()
     if (!tok) throw new ExpressionError('Incomplete expression')
     if (tok.type === 'paren' && tok.value === ')') {
@@ -323,17 +312,17 @@ export function evaluateExpression(input: string): number {
     }
     if (tok.type === 'number') {
       consume()
-      return { value: tok.value, isPercent: false }
+      return tok.value
     }
     if (tok.type === 'identifier') {
       const name = tok.value
       if (name === 'pi') {
         consume()
-        return { value: Math.PI, isPercent: false }
+        return Math.PI
       }
       if (name === 'e') {
         consume()
-        return { value: Math.E, isPercent: false }
+        return Math.E
       }
       if (!SCIENTIFIC_FUNCTIONS.has(name)) {
         throw new ExpressionError(`Unknown function or constant '${name}'`)
@@ -347,12 +336,12 @@ export function evaluateExpression(input: string): number {
         throw new ExpressionError('Missing closing parenthesis')
       }
       consume()
-      return { value: inside.value, isPercent: inside.isPercent }
+      return inside
     }
     throw new ExpressionError('Invalid syntax')
   }
 
-  function parseFunctionCall(name: string): Eval {
+  function parseFunctionCall(name: string): number {
     if (!peek() || peek()!.type !== 'paren' || peek()!.value !== '(') {
       throw new ExpressionError(`Missing opening parenthesis for function '${name}'`)
     }
@@ -362,18 +351,17 @@ export function evaluateExpression(input: string): number {
       throw new ExpressionError(`Missing closing parenthesis for function '${name}'`)
     }
     consume()
-    const computed = computeScientificFunction(name, argument.value)
-    return { value: computed, isPercent: false }
+    return computeScientificFunction(name, argument)
   }
 
-  const finalEval = parseExpression()
+  const finalValue = parseExpression()
   if (pos < tokens.length) {
     throw new ExpressionError('Invalid syntax')
   }
-  if (!isFinite(finalEval.value)) {
+  if (!isFinite(finalValue)) {
     throw new ExpressionError('Result is not a finite number')
   }
-  return finalEval.value
+  return finalValue
 }
 
 export function safeEvaluateExpression(rawExpression: string): { value?: number; error?: string } {
