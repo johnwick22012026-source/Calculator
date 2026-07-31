@@ -6,75 +6,20 @@
  * Disabled: reduced opacity and disable pointer interaction.
  */
 
-/* Global focus and interaction state variables */
 :root {
   color-scheme: dark;
-  /* Focus outline settings */
   --focus-outline-width: 2px;
   --focus-outline-style: solid;
   --focus-outline-color: #38bdf8;
   --focus-outline-offset: 2px;
-}
-
-/* Global interactive element defaults */
-button,
-a,
-[role="button"],
-[role="link"] {
-  cursor: pointer;
-  transition: background 0.2s ease,
-              border-color 0.2s ease,
-              color 0.2s ease,
-              filter 0.2s ease,
-              transform 0.1s ease,
-              box-shadow 0.2s ease;
-}
-
-input,
-select,
-textarea {
-  transition: background 0.2s ease,
-              border-color 0.2s ease,
-              color 0.2s ease,
-              filter 0.2s ease,
-              transform 0.1s ease,
-              box-shadow 0.2s ease;
-}
-
-/* Hover state */
-button:hover:not(:disabled),
-a:hover:not([disabled]),
-[role="button"]:hover:not([disabled]):not([aria-disabled="true"]),
-[role="link"]:hover:not([disabled]):not([aria-disabled="true"]) {
-  filter: brightness(1.05);
-}
-
-/* Active (pressed) state */
-button:active:not(:disabled),
-a:active:not([disabled]),
-[role="button"]:active:not([disabled]):not([aria-disabled="true"]),
-[role="link"]:active:not([disabled]):not([aria-disabled="true"]) {
-  transform: translateY(1px);
-}
-
-/* Focus-visible state */
-button:focus-visible,
-a:focus-visible,
-[role="button"]:focus-visible,
-[role="link"]:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-  outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
-  outline-offset: var(--focus-outline-offset);
-}
-
-/* Disabled state */
-button:disabled,
-[disabled],
-[aria-disabled="true"] {
-  opacity: 0.5;
-  cursor: not-allowed;
+  --shell-padding: clamp(1rem, 4vw, 2.5rem);
+  --panel-width: clamp(320px, 90vw, 520px);
+  --panel-gap: clamp(1.5rem, 4vw, 2rem);
+  --panel-padding: clamp(1.25rem, 4vw, 2.25rem);
+  --display-padding: clamp(1.2rem, 3vw, 1.7rem);
+  --panel-radius: clamp(24px, 3vw, 32px);
+  --button-gap: clamp(0.55rem, 0.8vw, 0.9rem);
+  --button-radius: 14px;
 }
 
 * {
@@ -86,6 +31,8 @@ body {
   font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
   background: radial-gradient(circle at top, #0f172a 0%, #0b1121 55%, #060a15 100%);
   min-height: 100vh;
+  color: #e2e8f0;
+  font-size: clamp(15px, 1.5vw, 17px);
 }
 
 #root {
@@ -97,30 +44,31 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(1rem, 5vh, 2rem) clamp(1rem, 5vw, 2rem);
+  padding: var(--shell-padding);
 }
 
 .calculator-panel {
-  width: clamp(280px, 90vw, 480px);
-  background: radial-gradient(circle at top, rgba(30, 41, 59, 0.9), #020617);
-  border-radius: 28px;
-  padding: clamp(1rem, 4vw, 2rem);
-  box-shadow: 0 30px 60px rgba(2, 6, 23, 0.7);
+  width: var(--panel-width);
+  background: radial-gradient(circle at top, rgba(30, 41, 59, 0.94), #020617);
+  border-radius: var(--panel-radius);
+  padding: var(--panel-padding);
+  box-shadow: 0 35px 70px rgba(2, 6, 23, 0.75);
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
+  gap: var(--panel-gap);
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 .calculator-display {
-  background-color: #020617;
+  background-color: rgba(2, 6, 23, 0.9);
   border: 1px solid rgba(148, 163, 184, 0.4);
-  border-radius: 20px;
-  padding: 1.25rem;
+  border-radius: 22px;
+  padding: var(--display-padding);
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 0.65rem;
   color: #e2e8f0;
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.05);
   transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
@@ -135,41 +83,38 @@ body {
   justify-content: space-between;
   font-size: 0.85rem;
   color: #94a3b8;
-}
-
-.display-subtle {
-  font-size: 0.8rem;
+  letter-spacing: 0.02em;
 }
 
 .display-mode {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.25rem;
+  gap: 0.35rem;
   font-size: 0.8rem;
   color: #94a3b8;
 }
 
 .display-mode strong {
-  display: inline-flex;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #e0e7ff;
 }
 
 .display-mode-hint {
   flex: 1;
+  font-size: 0.75rem;
   color: #cbd5f5;
 }
 
 .display-expression {
-  font-size: clamp(1.7rem, 3vw, 2.6rem);
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
   font-weight: 500;
   text-align: right;
   min-height: 2.75rem;
-  word-wrap: break-word;
+  letter-spacing: 0.02em;
   color: #e0e7ff;
-  letter-spacing: 0.01em;
-  transition: border 0.2s ease, padding 0.2s ease, background 0.2s ease;
+  background: transparent;
+  border: none;
 }
 
 .display-expression--error {
@@ -177,10 +122,6 @@ body {
   border: 1px solid rgba(248, 113, 113, 0.8);
   padding: 0.85rem;
   background: rgba(248, 113, 113, 0.08);
-}
-
-.display-expression:hover {
-  background-color: rgba(255, 255, 255, 0.02);
 }
 
 .display-expression:focus-visible {
@@ -197,11 +138,11 @@ body {
 }
 
 .display-result {
-  font-size: 1.05rem;
+  font-size: clamp(0.95rem, 1.5vw, 1.1rem);
   text-align: right;
   font-weight: 600;
   color: #cbd5f5;
-  padding: 0.2rem 0;
+  padding-top: 0.15rem;
   border-top: 1px solid rgba(148, 163, 184, 0.3);
 }
 
@@ -243,15 +184,15 @@ body {
 
 .display-error__hint {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: rgba(226, 232, 240, 0.8);
 }
 
 .scientific-controls {
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.75);
   border-radius: 20px;
   border: 1px solid rgba(148, 163, 184, 0.25);
-  padding: 1.15rem 1.25rem;
+  padding: clamp(1rem, 3vw, 1.4rem) clamp(1.1rem, 3vw, 1.6rem);
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -260,28 +201,28 @@ body {
 .scientific-controls__group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .scientific-controls__title {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: #cbd5f5;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .scientific-controls__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
-  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: var(--button-gap);
 }
 
 .scientific-control-button {
   border: 1px solid transparent;
-  border-radius: 14px;
-  padding: 0.75rem;
+  border-radius: var(--button-radius);
+  padding: 0.9rem;
   background: rgba(255, 255, 255, 0.05);
   color: #e2e8f0;
   font-size: 0.95rem;
@@ -290,6 +231,7 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.15rem;
+  min-height: 68px;
 }
 
 .scientific-control-button__label {
@@ -302,7 +244,7 @@ body {
 }
 
 .scientific-control-button:hover:not(:disabled):not([aria-disabled="true"]) {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
 }
 
 .scientific-control-button:active:not(:disabled):not([aria-disabled="true"]) {
@@ -324,13 +266,13 @@ body {
 }
 
 .calculator-keypad {
-  background-color: rgba(15, 23, 42, 0.5);
-  border-radius: 20px;
-  padding: 1rem;
+  background-color: rgba(15, 23, 42, 0.6);
+  border-radius: 22px;
+  padding: clamp(1rem, 3vw, 1.5rem);
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
+  border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 .keypad-header {
@@ -344,30 +286,34 @@ body {
 
 .keypad-header div p {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
 }
 
 .keypad-header div span {
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: #cbd5f5;
 }
 
 .keypad-operator-hint {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   padding: 0.25rem 0.75rem;
   border-radius: 999px;
   background: rgba(59, 130, 246, 0.15);
   color: #bfdbfe;
   border: 1px solid rgba(59, 130, 246, 0.35);
+  white-space: nowrap;
 }
 
 .keypad-helper-text {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: #e2e8f0;
   background: rgba(148, 163, 184, 0.08);
   border-radius: 12px;
-  padding: 0.45rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid rgba(148, 163, 184, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .keypad-helper-text strong {
@@ -377,25 +323,25 @@ body {
 .keypad-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 0.6rem;
+  gap: var(--button-gap);
 }
 
 .keypad-grid--scientific {
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 0.55rem;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
 }
 
 .keypad-button {
   border: none;
-  border-radius: 14px;
-  padding: 0.95rem 0;
+  border-radius: var(--button-radius);
+  padding: 0.9rem 0;
   font-size: 1.15rem;
   font-weight: 600;
   letter-spacing: 0.02em;
+  min-height: 58px;
 }
 
 .keypad-button:hover:not(:disabled) {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
 }
 
 .keypad-button:active:not(:disabled) {
@@ -405,7 +351,7 @@ body {
 .keypad-button:focus-visible {
   outline: var(--focus-outline-width) var(--focus-outline-style) var(--focus-outline-color);
   outline-offset: calc(var(--focus-outline-offset) + 2px);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35);
 }
 
 .keypad-button--primary {
@@ -428,36 +374,31 @@ body {
   cursor: not-allowed;
 }
 
-@media (max-width: 600px) {
-  .keypad-grid {
-    gap: 0.5rem;
-  }
-
-  .keypad-grid--scientific {
-    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+@media (max-width: 960px) {
+  .calculator-panel {
+    width: clamp(280px, 95vw, 460px);
+    border-radius: 24px;
   }
 
   .scientific-controls__grid {
-    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
   }
 
   .scientific-control-button {
-    padding: 0.65rem;
-    font-size: 0.85rem;
+    padding: 0.8rem;
+    min-height: 60px;
   }
 
-  .keypad-button {
-    font-size: 1rem;
-    padding: 0.8rem 0;
+  .keypad-grid--scientific {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   }
 
-  .display-operators-hint,
   .keypad-helper-text {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   body {
     min-height: auto;
   }
@@ -475,12 +416,23 @@ body {
     gap: 1.25rem;
   }
 
+  .display-header,
+  .display-mode {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .display-mode-hint {
+    font-size: 0.7rem;
+  }
+
   .calculator-display {
     padding: 1rem;
   }
 
   .scientific-controls {
-    padding: 0.85rem 1rem;
+    padding: 0.85rem 0.9rem;
   }
 
   .scientific-controls__grid {
@@ -489,13 +441,13 @@ body {
   }
 
   .scientific-control-button {
-    padding: 0.8rem;
-    font-size: 0.9rem;
-    min-height: 56px;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+    min-height: 54px;
   }
 
   .calculator-keypad {
-    padding: 0.85rem 1rem;
+    padding: 0.8rem;
   }
 
   .keypad-grid {
@@ -504,13 +456,39 @@ body {
   }
 
   .keypad-grid--scientific {
-    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
   }
 
   .keypad-button {
     font-size: 1rem;
-    padding: 1rem 0;
-    min-height: 54px;
+    padding: 0.9rem 0;
+    min-height: 52px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --panel-gap: 2.5rem;
+    --button-gap: 1rem;
+    --scientific-controls__grid: 1rem;
+  }
+
+  .calculator-panel {
+    width: 560px;
+    padding: 2.75rem;
+    border-radius: 36px;
+  }
+
+  .scientific-controls__group {
+    gap: 0.75rem;
+  }
+
+  .scientific-control-button {
+    min-height: 76px;
+  }
+
+  .keypad-grid {
+    gap: 0.9rem;
   }
 }
 
