@@ -20,6 +20,11 @@ export default function App() {
   const nextCaretRef = useRef<{ start: number; end: number } | null>(null)
   const handleKeyPressRef = useRef<(key: string) => void>(() => {})
 
+  // initial focus on expression input for keyboard users
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
   // Restore caret and focus after controlled updates
   useLayoutEffect(() => {
     const next = nextCaretRef.current
