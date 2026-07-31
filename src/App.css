@@ -19,12 +19,20 @@
 /* Global interactive element defaults */
 button,
 a,
-input,
-select,
-textarea,
 [role="button"],
 [role="link"] {
   cursor: pointer;
+  transition: background 0.2s ease,
+              border-color 0.2s ease,
+              color 0.2s ease,
+              filter 0.2s ease,
+              transform 0.1s ease,
+              box-shadow 0.2s ease;
+}
+
+input,
+select,
+textarea {
   transition: background 0.2s ease,
               border-color 0.2s ease,
               color 0.2s ease,
@@ -89,14 +97,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: clamp(1rem, 5vh, 2rem) clamp(1rem, 5vw, 2rem);
 }
 
 .calculator-panel {
-  width: min(100%, 480px);
+  width: clamp(280px, 90vw, 480px);
   background: radial-gradient(circle at top, rgba(30, 41, 59, 0.9), #020617);
   border-radius: 28px;
-  padding: 2rem;
+  padding: clamp(1rem, 4vw, 2rem);
   box-shadow: 0 30px 60px rgba(2, 6, 23, 0.7);
   display: flex;
   flex-direction: column;
@@ -421,10 +429,6 @@ body {
 }
 
 @media (max-width: 600px) {
-  .calculator-panel {
-    padding: 1.5rem;
-  }
-
   .keypad-grid {
     gap: 0.5rem;
   }
