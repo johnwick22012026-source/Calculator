@@ -3,9 +3,24 @@ import React, { useEffect } from 'react'
 type KeypadButton = {
   label: string
   variant: 'primary' | 'secondary' | 'tinted'
+  value?: string
 }
 
-const placeholderKeys: KeypadButton[] = [
+const scientificKeys: KeypadButton[] = [
+  { label: 'sqrt', value: 'sqrt(', variant: 'secondary' },
+  { label: 'square', value: 'square(', variant: 'secondary' },
+  { label: 'cube', value: 'cube(', variant: 'secondary' },
+  { label: 'reciprocal', value: 'reciprocal(', variant: 'secondary' },
+  { label: 'abs', value: 'abs(', variant: 'secondary' },
+  { label: 'ln', value: 'ln(', variant: 'secondary' },
+  { label: 'log10', value: 'log10(', variant: 'secondary' },
+  { label: 'exp', value: 'exp(', variant: 'secondary' },
+  { label: 'factorial', value: 'factorial(', variant: 'secondary' },
+  { label: 'π', value: 'π', variant: 'tinted' },
+  { label: 'e', value: 'e', variant: 'tinted' },
+]
+
+const coreKeys: KeypadButton[] = [
   { label: 'AC', variant: 'secondary' },
   { label: 'DEL', variant: 'secondary' },
   { label: '%', variant: 'tinted' },
@@ -74,6 +89,21 @@ export default function CalculatorKeypad({ onKeyPress }: CalculatorKeypadProps) 
     }
   }, [onKeyPress])
 
+  const renderButton = (key: KeypadButton) => {
+    const value = key.value ?? key.label
+    return (
+      <button
+        type="button"
+        key={key.label}
+        className={`keypad-button keypad-button--${key.variant}`}
+        aria-label={`Key ${key.label}`}
+        onClick={() => onKeyPress(value)}
+      >
+        {key.label}
+      </button>
+    )
+  }
+
   return (
     <section
       className="calculator-keypad"
@@ -90,18 +120,11 @@ export default function CalculatorKeypad({ onKeyPress }: CalculatorKeypadProps) 
       <div className="keypad-helper-text">
         Examples: <strong>200+10%</strong> (percent increment), <strong>2^8</strong> (power)
       </div>
+      <div className="keypad-grid keypad-grid--scientific" role="group" aria-label="Scientific controls">
+        {scientificKeys.map(renderButton)}
+      </div>
       <div className="keypad-grid" role="group" aria-label="Calculator buttons">
-        {placeholderKeys.map(key => (
-          <button
-            type="button"
-            key={key.label}
-            className={`keypad-button keypad-button--${key.variant}`}
-            aria-label={`Key ${key.label}`}
-            onClick={() => onKeyPress(key.label)}
-          >
-            {key.label}
-          </button>
-        ))}
+        {coreKeys.map(renderButton)}
       </div>
     </section>
   )
