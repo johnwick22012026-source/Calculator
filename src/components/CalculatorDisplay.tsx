@@ -21,6 +21,10 @@ export default function CalculatorDisplay({
         <span>{statusLabel}</span>
         <span className="display-subtle">Scientific toolbar</span>
       </div>
+      <div className="display-operators-hint" aria-live="polite">
+        Supports <span aria-label="percent symbol">%</span> (percent-of or ratio) and <span aria-label="caret symbol">^</span> (exponent)
+        — e.g. <span className="display-helper-example">200+10%</span> or <span className="display-helper-example">2^8</span>
+      </div>
       <div className="display-expression" aria-live="polite">
         {expression || 'Enter an expression'}
       </div>
