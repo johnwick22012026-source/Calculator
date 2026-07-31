@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react'
 import './App.css'
 import CalculatorDisplay from './components/CalculatorDisplay'
 import CalculatorKeypad from './components/CalculatorKeypad'
@@ -12,6 +12,14 @@ import { formatResult } from './utils/formatResult'
 import { mapKeyboardToCalculatorKey } from './utils/keyboard'
 
 type ScientificControlType = 'function' | 'constant' | 'operator'
+
+type Status = 'waiting' | 'editing' | 'error' | 'result'
+const statusTextMap: Record<Status, string> = {
+  waiting: 'Waiting for input',
+  editing: 'Editing expression',
+  error: 'Error detected – fix expression',
+  result: 'Result'
+}
 
 const INPUT_VALIDATION_HINTS: { pattern: string; hint: string }[] = [
   {
@@ -57,7 +65,6 @@ const INPUT_VALIDATION_HINTS: { pattern: string; hint: string }[] = [
 ]
 
 const DEFAULT_INPUT_HINT = 'Fix the expression so the calculator can parse it correctly.'
-
 function getInputValidationHint(message: string) {
   const match = INPUT_VALIDATION_HINTS.find(entry => message.startsWith(entry.pattern))
   return match?.hint ?? DEFAULT_INPUT_HINT
@@ -66,41 +73,46 @@ function getInputValidationHint(message: string) {
 export default function App() {
   const [expression, setExpression] = useState<string>('')
   const [result, setResult] = useState<string>('')
-  const [statusLabel, setStatusLabel] = useState<string>('Waiting for input')
   const [ans, setAns] = useState<number | string>('')
   const [error, setError] = useState<string>('')
-  const [inputValidationMessage, setInputValidationMessage] = useState<string>('')
+  const [status, setStatus] = useState<Status>('waiting')
+
   const inputRef = useRef<HTMLInputElement>(null)
   const selectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
   const nextCaretRef = useRef<{ start: number; end: number } | null>(null)
   const handleKeyPressRef = useRef<(key: string) => void>(() => {})
   const lastSuccessfulResultRef = useRef<string>('')
 
-  // initial focus on expression input for keyboard users
+  // Derived validation message
+  const inputValidationMessage = useMemo(() => {
+    const normalized = expression.replace(/×/g, '*').replace(/÷/g, '/')
+    if (!normalized.trim()) return ''
+    try {
+      validateExpressionInput(normalized)
+      return ''
+    } catch (validationError) {
+      if (validationError instanceof ExpressionError) {
+        return validationError.message
+      }
+      return DEFAULT_INPUT_HINT
+    }
+  }, [expression])
+  const hasError = Boolean(error || inputValidationMessage)
+  const inputValidationHint = inputValidationMessage ? getInputValidationHint(inputValidationMessage) : ''
+
+  const statusLabel = hasError
+    ? statusTextMap.error
+    : status === 'waiting'
+    ? statusTextMap.waiting
+    : status === 'result'
+    ? statusTextMap.result
+    : statusTextMap.editing
+
+  // initial focus
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
 
-  useEffect(() => {
-    const normalized = expression.replace(/×/g, '*').replace(/÷/g, '/')
-    if (!normalized.trim()) {
-      setInputValidationMessage('')
-      return
-    }
-
-    try {
-      validateExpressionInput(normalized)
-      setInputValidationMessage('')
-    } catch (validationError) {
-      if (validationError instanceof ExpressionError) {
-        setInputValidationMessage(validationError.message)
-      } else {
-        setInputValidationMessage('Please adjust the expression to include only supported characters.')
-      }
-    }
-  }, [expression])
-
-  // Restore caret and focus after controlled updates
   useLayoutEffect(() => {
     const next = nextCaretRef.current
     if (next && inputRef.current) {
@@ -110,15 +122,15 @@ export default function App() {
     }
   }, [expression])
 
-  const setEditingFeedback = () => {
-    setError('')
-    setStatusLabel('Editing expression')
-  }
-
   const applyEvaluationError = (message: string) => {
     setResult(lastSuccessfulResultRef.current)
     setError(message)
-    setStatusLabel('Error detected – fix expression')
+    setStatus('error')
+  }
+
+  const setEditingFeedback = () => {
+    setError('')
+    setStatus('editing')
   }
 
   const insertTextAtSelection = (
@@ -130,6 +142,7 @@ export default function App() {
     const { start, end } = selectionRef.current
     const newExpr = `${prev.slice(0, start)}${value}${suffix}${prev.slice(end)}`
     const caretPos = start + caretOffset
+
     setExpression(newExpr)
     selectionRef.current = { start: caretPos, end: caretPos }
     nextCaretRef.current = { start: caretPos, end: caretPos }
@@ -142,14 +155,12 @@ export default function App() {
 
   const endsWithImplicitMultiplicationTrigger = (segment: string): boolean => {
     const trimmed = segment.replace(/\s+$/, '')
-    if (!trimmed) return false
-    return /(?:[0-9πe)]|ans)$/i.test(trimmed)
+    return !!trimmed && /(?:[0-9πe)]|ans)$/i.test(trimmed)
   }
 
   const startsWithImplicitMultiplicationTrigger = (segment: string): boolean => {
     const trimmed = segment.replace(/^\s+/, '')
-    if (!trimmed) return false
-    return /^(?:[0-9πe(]|ans)/i.test(trimmed)
+    return !!trimmed && /^(?:[0-9πe(]|ans)/i.test(trimmed)
   }
 
   const insertScientificToken = (token: string, type: ScientificControlType) => {
@@ -178,7 +189,6 @@ export default function App() {
     const left = prev.slice(0, start)
     const right = prev.slice(end)
 
-    // Prevent inserting a second decimal in the current number segment
     const leftNumberMatch = left.match(/(\d+(\.\d*)?)$/)
     const rightNumberMatch = right.match(/^(\d*(\.\d*)?)/)
     if ((leftNumberMatch && leftNumberMatch[0].includes('.')) ||
@@ -206,7 +216,6 @@ export default function App() {
     let pos = 0
 
     if (start !== end) {
-      // delete selected text
       newExpr = prev.slice(0, start) + prev.slice(end)
       pos = start
     } else if (start > 0) {
@@ -227,7 +236,7 @@ export default function App() {
       setResult('')
       lastSuccessfulResultRef.current = ''
       setError('')
-      setStatusLabel('Waiting for input')
+      setStatus('waiting')
     }
   }
 
@@ -237,16 +246,13 @@ export default function App() {
     nextCaretRef.current = { start: 0, end: 0 }
     setResult('')
     setError('')
-    setStatusLabel('Waiting for input')
+    setStatus('waiting')
     lastSuccessfulResultRef.current = ''
   }
 
   const handleKeyPress = (key: string) => {
-    // core operators insertion at caret
     if (['+', '-', '×', '÷', '*', '/', '^', '%'].includes(key)) {
-      if (!expression && key !== '-') {
-        return
-      }
+      if (!expression && key !== '-') return
       appendValue(key)
       return
     }
@@ -254,19 +260,18 @@ export default function App() {
     switch (key) {
       case 'AC':
         clearExpression()
-        break
+        return
       case 'DEL':
         deleteLastCharacter()
-        break
+        return
       case '.':
         insertDecimalPoint()
-        break
+        return
       case '=': {
         if (!expression.trim()) {
           applyEvaluationError('Nothing to evaluate')
           return
         }
-
         if (inputValidationMessage) {
           applyEvaluationError(inputValidationMessage)
           return
@@ -285,18 +290,15 @@ export default function App() {
         setExpression(resultString)
         setAns(evaluation.value)
         setError('')
-        setStatusLabel('Result')
+        setStatus('result')
         lastSuccessfulResultRef.current = resultString
-        // place caret at end
         nextCaretRef.current = { start: resultString.length, end: resultString.length }
         selectionRef.current = { start: resultString.length, end: resultString.length }
-        break
+        return
       }
       case 'Ans':
-        if (ans !== '') {
-          appendValue(String(ans))
-        }
-        break
+        if (ans !== '') appendValue(String(ans))
+        return
       default:
         appendValue(key)
     }
@@ -310,58 +312,29 @@ export default function App() {
   }
 
   const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
-      return
-    }
-
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
     const mappedKey = mapKeyboardToCalculatorKey(event.key)
-    if (!mappedKey) {
-      return
-    }
-
+    if (!mappedKey) return
     synchronizeSelectionFromInput(event.currentTarget)
     event.preventDefault()
     handleKeyPressRef.current(mappedKey)
   }
 
-  useEffect(() => {
-    handleKeyPressRef.current = handleKeyPress
-  }, [handleKeyPress])
+  useEffect(() => { handleKeyPressRef.current = handleKeyPress }, [handleKeyPress])
 
   useEffect(() => {
     const handleGlobalKeyDown = (event: KeyboardEvent) => {
-      if (
-        event.defaultPrevented ||
-        event.metaKey ||
-        event.ctrlKey ||
-        event.altKey
-      ) {
-        return
-      }
-
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
       const mappedKey = mapKeyboardToCalculatorKey(event.key)
-      if (!mappedKey) {
-        return
-      }
-
+      if (!mappedKey) return
       synchronizeSelectionFromInput(inputRef.current)
       event.preventDefault()
       handleKeyPressRef.current(mappedKey)
       inputRef.current?.focus()
     }
-
     window.addEventListener('keydown', handleGlobalKeyDown)
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [])
-
-  const hasError = Boolean(error || inputValidationMessage)
-  const inputValidationHint = inputValidationMessage ? getInputValidationHint(inputValidationMessage) : ''
-
-  const onExpressionChange = (newExpr: string, selStart: number, selEnd: number) => {
-    selectionRef.current = { start: selStart, end: selEnd }
-    setExpression(newExpr)
-    setEditingFeedback()
-  }
 
   return (
     <main className="calculator-shell">
@@ -371,11 +344,15 @@ export default function App() {
           expression={expression}
           result={result}
           statusLabel={statusLabel}
-          error={error}
+          error={error || inputValidationMessage}
           hasError={hasError}
           inputValidationMessage={inputValidationMessage}
           inputValidationHint={inputValidationHint}
-          onExpressionChange={onExpressionChange}
+          onExpressionChange={(newExpr, selStart, selEnd) => {
+            selectionRef.current = { start: selStart, end: selEnd }
+            setExpression(newExpr)
+            setEditingFeedback()
+          }}
           onInputKeyDown={handleInputKeyDown}
         />
         <ScientificInputControls onInsert={insertScientificToken} />
