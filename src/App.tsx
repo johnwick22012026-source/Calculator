@@ -74,6 +74,7 @@ export default function App() {
   const selectionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 })
   const nextCaretRef = useRef<{ start: number; end: number } | null>(null)
   const handleKeyPressRef = useRef<(key: string) => void>(() => {})
+  const lastSuccessfulResultRef = useRef<string>('')
 
   // initial focus on expression input for keyboard users
   useEffect(() => {
@@ -110,13 +111,12 @@ export default function App() {
   }, [expression])
 
   const setEditingFeedback = () => {
-    setResult('')
     setError('')
     setStatusLabel('Editing expression')
   }
 
   const applyEvaluationError = (message: string) => {
-    setResult('')
+    setResult(lastSuccessfulResultRef.current)
     setError(message)
     setStatusLabel('Error detected – fix expression')
   }
@@ -177,15 +177,18 @@ export default function App() {
     const { start, end } = selectionRef.current
     const left = prev.slice(0, start)
     const right = prev.slice(end)
-    let insert = '.'
 
+    // Prevent inserting a second decimal in the current number segment
+    const leftNumberMatch = left.match(/(\d+(\.\d*)?)$/)
+    const rightNumberMatch = right.match(/^(\d*(\.\d*)?)/)
+    if ((leftNumberMatch && leftNumberMatch[0].includes('.')) ||
+        (rightNumberMatch && rightNumberMatch[0].includes('.'))) {
+      return
+    }
+
+    let insert = '.'
     if (!left || /[+\-×÷*/^%]$/.test(left)) {
       insert = '0.'
-    } else {
-      const lastNumberMatch = left.match(/(\d+(\.\d*)?)$/)
-      if (lastNumberMatch && lastNumberMatch[0].includes('.')) {
-        return
-      }
     }
 
     const newExpr = left + insert + right
@@ -222,6 +225,7 @@ export default function App() {
       setEditingFeedback()
     } else {
       setResult('')
+      lastSuccessfulResultRef.current = ''
       setError('')
       setStatusLabel('Waiting for input')
     }
@@ -234,6 +238,7 @@ export default function App() {
     setResult('')
     setError('')
     setStatusLabel('Waiting for input')
+    lastSuccessfulResultRef.current = ''
   }
 
   const handleKeyPress = (key: string) => {
@@ -281,6 +286,7 @@ export default function App() {
         setAns(evaluation.value)
         setError('')
         setStatusLabel('Result')
+        lastSuccessfulResultRef.current = resultString
         // place caret at end
         nextCaretRef.current = { start: resultString.length, end: resultString.length }
         selectionRef.current = { start: resultString.length, end: resultString.length }
