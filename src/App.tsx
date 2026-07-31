@@ -1,40 +1,49 @@
 import React, { useState } from 'react'
-import CalculatorDisplay from './components/CalculatorDisplay'
-import './App.css'
+import { evaluateExpression, ExpressionError } from './utils/expression'
 
-const KEYS: string[][] = [
-  ['AC', 'DEL', 'Ans', '÷'],
-  ['7', '8', '9', '×'],
-  ['4', '5', '6', '-'],
-  ['1', '2', '3', '+'],
-  ['0', '.', '='],
-]
-
-interface KeypadProps {
-  onKeyPress: (key: string) => void
+// Embedded placeholder display component to avoid missing module errors
+interface DisplayProps {
+  expression: string
+  result: string
+  statusLabel: string
+  error: string
 }
-
-const CalculatorKeypad: React.FC<KeypadProps> = ({ onKeyPress }) => (
-  <div className="calculator-keypad">
-    {KEYS.map((row, rowIndex) => (
-      <div className="keypad-row" key={rowIndex}>
-        {row.map(key => (
-          <button
-            key={key}
-            className="keypad-key"
-            onClick={() => onKeyPress(key)}
-            type="button"
-          >
-            {key}
-          </button>
-        ))}
+const CalculatorDisplay: React.FC<DisplayProps> = ({ expression, result, statusLabel, error }) => (
+  <div className="calculator-display">
+    <div className="status-label">{statusLabel}</div>
+    {error ? (
+      <div className="error">{error}</div>
+    ) : (
+      <div className="values">
+        <span className="expression">{expression}</span>
+        {result && <span className="result">= {result}</span>}
       </div>
-    ))}
+    )}
   </div>
 )
 
-const OPERATOR_KEYS = ['+', '-', '×', '÷']
-const isOperatorEnding = (input: string) => /[+\-×÷*/]$/.test(input)
+// Embedded placeholder keypad component to avoid missing module errors
+interface KeypadProps {
+  onKeyPress: (key: string) => void
+}
+const CalculatorKeypad: React.FC<KeypadProps> = ({ onKeyPress }) => {
+  const keys = [
+    'AC', 'DEL', '^', '÷',
+    '7', '8', '9', '×',
+    '4', '5', '6', '-',
+    '1', '2', '3', '+',
+    '0', '.', 'Ans', '='
+  ]
+  return (
+    <div className="calculator-keypad">
+      {keys.map(key => (
+        <button key={key} onClick={() => onKeyPress(key)}>
+          {key}
+        </button>
+      ))}
+    </div>
+  )
+}
 
 export default function App() {
   const [expression, setExpression] = useState<string>('')
@@ -57,7 +66,7 @@ export default function App() {
   const insertDecimalPoint = () => {
     setExpression(prev => {
       let newExpr: string
-      if (!prev || isOperatorEnding(prev)) {
+      if (!prev || /[+\-×÷*/^]$/.test(prev)) {
         newExpr = `${prev}0.`
       } else {
         const lastNumberMatch = prev.match(/(\d+(\.\d*)?)$/)
@@ -97,15 +106,12 @@ export default function App() {
   }
 
   const handleKeyPress = (key: string) => {
-    if (OPERATOR_KEYS.includes(key)) {
-      // Prevent invalid operator sequences
+    if (['+', '-', '×', '÷', '*', '/', '^'].includes(key)) {
       if (!expression && key !== '-') {
-        // Cannot start with operator other than '-'
         return
       }
       setExpression(prev => {
-        if (isOperatorEnding(prev)) {
-          // Replace the last operator with the new one
+        if (/[+\-×÷*/^]$/.test(prev)) {
           return prev.slice(0, -1) + key
         }
         return prev + key
@@ -133,15 +139,15 @@ export default function App() {
         }
         try {
           const sanitized = expression.replace(/×/g, '*').replace(/÷/g, '/')
-          // eslint-disable-next-line no-eval
-          const evalResult = eval(sanitized)
+          const evalResult = evaluateExpression(sanitized)
           const resultString = String(evalResult)
           setResult(resultString)
           setAns(evalResult)
           setError('')
           setStatusLabel('Result')
-        } catch {
-          setError('Error evaluating expression')
+        } catch (e) {
+          const message = e instanceof ExpressionError ? e.message : 'Error evaluating expression'
+          setError(message)
           setResult('')
           setStatusLabel('Error')
         }
@@ -152,7 +158,6 @@ export default function App() {
         }
         break
       default:
-        // Digit or other
         appendValue(key)
     }
   }
