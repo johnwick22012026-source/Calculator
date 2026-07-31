@@ -1,107 +1,67 @@
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
+import CalculatorDisplay from './components/CalculatorDisplay'
+import CalculatorKeypad from './components/CalculatorKeypad'
 import './App.css'
 
-const buttons = [
-  '7',
-  '8',
-  '9',
-  '/',
-  '4',
-  '5',
-  '6',
-  '*',
-  '1',
-  '2',
-  '3',
-  '- ',
-  '0',
-  '.',
-  '=',
-  '+',
-]
-
 export default function App() {
-  const [expression, setExpression] = useState('')
-  const [error, setError] = useState('')
+  const [expression, setExpression] = useState<string>('')
+  const [result, setResult] = useState<string>('')
+  const [statusLabel, setStatusLabel] = useState<string>('Waiting for input')
+  const [ans, setAns] = useState<number | string>('')
 
-  const displayValue = useMemo(() => {
-    if (error) {
-      return error
+  const handleKeyPress = (key: string) => {
+    switch (key) {
+      case 'AC':
+        setExpression('')
+        setResult('')
+        setStatusLabel('Cleared')
+        break
+      case 'DEL':
+        setExpression(prev => prev.slice(0, -1))
+        setResult('')
+        setStatusLabel('Editing')
+        break
+      case '=':
+        try {
+          if (!expression) {
+            setStatusLabel('Nothing to evaluate')
+            return
+          }
+          const sanitized = expression
+            .replace(/×/g, '*')
+            .replace(/÷/g, '/')
+          // eslint-disable-next-line no-eval
+          const evalResult = eval(sanitized)
+          const resultString = String(evalResult)
+          setResult(resultString)
+          setAns(evalResult)
+          setStatusLabel('Result')
+        } catch {
+          setResult('Error')
+          setStatusLabel('Error')
+        }
+        break
+      case 'Ans':
+        setExpression(prev => prev + ans)
+        setStatusLabel('Editing')
+        break
+      default:
+        setExpression(prev => prev + key)
+        setResult('')
+        setStatusLabel('Editing')
     }
-    if (!expression) {
-      return '0'
-    }
-    return expression
-  }, [expression, error])
-
-  const appendValue = (value: string) => {
-    if (value === '=') {
-      calculateResult()
-      return
-    }
-
-    if (value.trim() === '') {
-      return
-    }
-
-    setError('')
-    setExpression(prev => {
-      const sanitizedPrev = prev.trim()
-      if (/[+\-*/.]$/.test(sanitizedPrev) && /[+\-*/.]/.test(value)) {
-        return sanitizedPrev.slice(0, -1) + value.trim()
-      }
-      return sanitizedPrev + value
-    })
-  }
-
-  const calculateResult = () => {
-    try {
-      // eslint-disable-next-line no-new-func
-      const result = Function(`"use strict"; return (${expression})`)()
-      setExpression(String(result))
-      setError('')
-    } catch (err) {
-      setError('Error')
-    }
-  }
-
-  const clearAll = () => {
-    setExpression('')
-    setError('')
-  }
-
-  const deleteLast = () => {
-    setError('')
-    setExpression(prev => prev.slice(0, -1))
   }
 
   return (
-    <div className="calculator-container">
-      <div className="calculator-display" aria-label="Calculator display">
-        {displayValue}
+    <main className="calculator-shell">
+      <div className="calculator-panel">
+        <CalculatorDisplay
+          expression={expression}
+          result={result}
+          statusLabel={statusLabel}
+        />
+        <CalculatorKeypad onKeyPress={handleKeyPress} />
       </div>
-      <div className="calculator-keypad" aria-label="Calculator keypad">
-        <div className="calculator-controls">
-          <button type="button" className="calculator-action" onClick={clearAll}>
-            AC
-          </button>
-          <button type="button" className="calculator-action" onClick={deleteLast}>
-            DEL
-          </button>
-        </div>
-        <div className="calculator-grid">
-          {buttons.map(btn => (
-            <button
-              type="button"
-              key={btn}
-              className={`calculator-button ${/[+\-*/=]/.test(btn) ? 'calculator-button--operator' : ''}`}
-              onClick={() => appendValue(btn)}
-            >
-              {btn}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
+    </main>
   )
 }
