@@ -1,4 +1,4 @@
-import React, { useState, useRef, useLayoutEffect } from 'react'
+import React, { useLayoutEffect, useRef, useState } from 'react'
 import './App.css'
 import CalculatorDisplay from './components/CalculatorDisplay'
 import CalculatorKeypad from './components/CalculatorKeypad'
@@ -40,38 +40,55 @@ export default function App() {
     setStatusLabel('Error detected – fix expression')
   }
 
-  const updateExpression = (newExpr: string, caretStart: number, caretEnd: number) => {
+  const insertTextAtSelection = (
+    value: string,
+    options?: { suffix?: string; caretOffset?: number }
+  ) => {
+    const { suffix = '', caretOffset = value.length } = options ?? {}
+    const prev = expression
+    const { start, end } = selectionRef.current
+    const newExpr = `${prev.slice(0, start)}${value}${suffix}${prev.slice(end)}`
+    const caretPos = start + caretOffset
     setExpression(newExpr)
-    selectionRef.current = { start: caretStart, end: caretEnd }
-    nextCaretRef.current = { start: caretStart, end: caretEnd }
+    selectionRef.current = { start: caretPos, end: caretPos }
+    nextCaretRef.current = { start: caretPos, end: caretPos }
     setEditingFeedback()
   }
 
   const appendValue = (value: string) => {
-    const prev = expression
-    const { start, end } = selectionRef.current
-    const newExpr = `${prev.slice(0, start)}${value}${prev.slice(end)}`
-    const pos = start + value.length
-    setExpression(newExpr)
-    selectionRef.current = { start: pos, end: pos }
-    nextCaretRef.current = { start: pos, end: pos }
-    setEditingFeedback()
+    insertTextAtSelection(value)
+  }
+
+  const endsWithImplicitMultiplicationTrigger = (segment: string): boolean => {
+    const trimmed = segment.replace(/\s+$/, '')
+    if (!trimmed) return false
+    return /(?:[0-9πe)]|ans)$/i.test(trimmed)
+  }
+
+  const startsWithImplicitMultiplicationTrigger = (segment: string): boolean => {
+    const trimmed = segment.replace(/^\s+/, '')
+    if (!trimmed) return false
+    return /^(?:[0-9πe(]|ans)/i.test(trimmed)
   }
 
   const insertScientificToken = (token: string, type: ScientificControlType) => {
-    let formatted = token
-    const { start } = selectionRef.current
-    const previousChar = expression[start - 1]
+    const { start, end } = selectionRef.current
+    const leftSegment = expression.slice(0, start)
+    const rightSegment = expression.slice(end)
 
-    // If inserting a function or constant immediately after a number, π, e, or ')',
-    // automatically insert a multiplication operator for a valid expression
-    if ((type === 'function' || type === 'constant') && previousChar) {
-      if (/[0-9πe)]/.test(previousChar)) {
-        formatted = `×${formatted}`
-      }
-    }
+    const needsMultiplyBefore =
+      type !== 'operator' && endsWithImplicitMultiplicationTrigger(leftSegment)
+    const needsMultiplyAfter =
+      type === 'constant' && startsWithImplicitMultiplicationTrigger(rightSegment)
 
-    appendValue(formatted)
+    const prefix = needsMultiplyBefore ? '×' : ''
+    const suffix = needsMultiplyAfter ? '×' : ''
+    const insertedValue = `${prefix}${token}`
+
+    insertTextAtSelection(insertedValue, {
+      suffix,
+      caretOffset: insertedValue.length + suffix.length
+    })
   }
 
   const insertDecimalPoint = () => {
