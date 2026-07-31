@@ -2,8 +2,11 @@ import React, { useState, useRef, useLayoutEffect } from 'react'
 import './App.css'
 import CalculatorDisplay from './components/CalculatorDisplay'
 import CalculatorKeypad from './components/CalculatorKeypad'
+import ScientificInputControls from './components/ScientificInputControls'
 import { safeEvaluateExpression } from './utils/expression'
 import { formatResult } from './utils/formatResult'
+
+type ScientificControlType = 'function' | 'constant' | 'operator'
 
 export default function App() {
   const [expression, setExpression] = useState<string>('')
@@ -53,6 +56,22 @@ export default function App() {
     selectionRef.current = { start: pos, end: pos }
     nextCaretRef.current = { start: pos, end: pos }
     setEditingFeedback()
+  }
+
+  const insertScientificToken = (token: string, type: ScientificControlType) => {
+    let formatted = token
+    const { start } = selectionRef.current
+    const previousChar = expression[start - 1]
+
+    // If inserting a function or constant immediately after a number, π, e, or ')',
+    // automatically insert a multiplication operator for a valid expression
+    if ((type === 'function' || type === 'constant') && previousChar) {
+      if (/[0-9πe)]/.test(previousChar)) {
+        formatted = `×${formatted}`
+      }
+    }
+
+    appendValue(formatted)
   }
 
   const insertDecimalPoint = () => {
@@ -194,6 +213,7 @@ export default function App() {
           hasError={hasError}
           onExpressionChange={onExpressionChange}
         />
+        <ScientificInputControls onInsert={insertScientificToken} />
         <CalculatorKeypad onKeyPress={handleKeyPress} />
       </div>
     </main>
