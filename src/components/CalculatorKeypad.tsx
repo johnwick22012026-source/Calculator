@@ -1,5 +1,4 @@
 import React from 'react'
-import { mapKeyboardToCalculatorKey } from '../utils/keyboard'
 
 type KeypadButton = {
   label: string
@@ -58,21 +57,6 @@ type CalculatorKeypadProps = {
 }
 
 export default function CalculatorKeypad({ onKeyPress }: CalculatorKeypadProps) {
-  // Handle keyboard input only when this keypad section is focused
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
-    if (e.metaKey || e.ctrlKey || e.altKey) {
-      return
-    }
-
-    const mappedKey = mapKeyboardToCalculatorKey(e.key)
-    if (!mappedKey) {
-      return
-    }
-
-    e.preventDefault()
-    onKeyPress(mappedKey)
-  }
-
   const renderButton = (key: KeypadButton) => {
     const value = key.value ?? key.label
     return (
@@ -92,8 +76,6 @@ export default function CalculatorKeypad({ onKeyPress }: CalculatorKeypadProps) 
     <section
       className="calculator-keypad"
       aria-label="Calculator keypad region"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
     >
       <div className="keypad-header">
         <div>
