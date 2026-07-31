@@ -1,49 +1,8 @@
 import React, { useState } from 'react'
+import './App.css'
+import CalculatorDisplay from './components/CalculatorDisplay'
+import CalculatorKeypad from './components/CalculatorKeypad'
 import { evaluateExpression, ExpressionError } from './utils/expression'
-
-// Embedded placeholder display component to avoid missing module errors
-interface DisplayProps {
-  expression: string
-  result: string
-  statusLabel: string
-  error: string
-}
-const CalculatorDisplay: React.FC<DisplayProps> = ({ expression, result, statusLabel, error }) => (
-  <div className="calculator-display">
-    <div className="status-label">{statusLabel}</div>
-    {error ? (
-      <div className="error">{error}</div>
-    ) : (
-      <div className="values">
-        <span className="expression">{expression}</span>
-        {result && <span className="result">= {result}</span>}
-      </div>
-    )}
-  </div>
-)
-
-// Embedded placeholder keypad component to avoid missing module errors
-interface KeypadProps {
-  onKeyPress: (key: string) => void
-}
-const CalculatorKeypad: React.FC<KeypadProps> = ({ onKeyPress }) => {
-  const keys = [
-    'AC', 'DEL', '^', '÷',
-    '7', '8', '9', '×',
-    '4', '5', '6', '-',
-    '1', '2', '3', '+',
-    '0', '.', 'Ans', '='
-  ]
-  return (
-    <div className="calculator-keypad">
-      {keys.map(key => (
-        <button key={key} onClick={() => onKeyPress(key)}>
-          {key}
-        </button>
-      ))}
-    </div>
-  )
-}
 
 export default function App() {
   const [expression, setExpression] = useState<string>('')
@@ -75,20 +34,16 @@ export default function App() {
         }
         newExpr = `${prev}.`
       }
-      setResult('')
-      setError('')
-      setStatusLabel('Editing')
+      setEditingFeedback()
       return newExpr
     })
   }
 
   const deleteLastCharacter = () => {
     setExpression(prev => {
-      const newExpr = prev ? prev.slice(0, -1) : ''
+      const newExpr = prev.slice(0, -1)
       if (newExpr) {
-        setResult('')
-        setError('')
-        setStatusLabel('Editing')
+        setEditingFeedback()
       } else {
         setResult('')
         setError('')
@@ -107,11 +62,17 @@ export default function App() {
 
   const handleKeyPress = (key: string) => {
     if (['+', '-', '×', '÷', '*', '/', '^'].includes(key)) {
+      // Prevent leading binary operators other than unary minus
       if (!expression && key !== '-') {
         return
       }
+
       setExpression(prev => {
         if (/[+\-×÷*/^]$/.test(prev)) {
+          // Don't replace a standalone unary minus with another operator
+          if (prev.length === 1) {
+            return prev
+          }
           return prev.slice(0, -1) + key
         }
         return prev + key
