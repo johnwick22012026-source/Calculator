@@ -212,6 +212,28 @@ export default function App() {
     }
   }
 
+  const synchronizeSelectionFromInput = (target: HTMLInputElement | null) => {
+    if (!target) return
+    const start = target.selectionStart ?? 0
+    const end = target.selectionEnd ?? 0
+    selectionRef.current = { start, end }
+  }
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+      return
+    }
+
+    const mappedKey = mapKeyboardToCalculatorKey(event.key)
+    if (!mappedKey) {
+      return
+    }
+
+    synchronizeSelectionFromInput(event.currentTarget)
+    event.preventDefault()
+    handleKeyPressRef.current(mappedKey)
+  }
+
   useEffect(() => {
     handleKeyPressRef.current = handleKeyPress
   }, [handleKeyPress])
@@ -232,6 +254,7 @@ export default function App() {
         return
       }
 
+      synchronizeSelectionFromInput(inputRef.current)
       event.preventDefault()
       handleKeyPressRef.current(mappedKey)
       inputRef.current?.focus()
@@ -260,6 +283,7 @@ export default function App() {
           error={error}
           hasError={hasError}
           onExpressionChange={onExpressionChange}
+          onInputKeyDown={handleInputKeyDown}
         />
         <ScientificInputControls onInsert={insertScientificToken} />
         <CalculatorKeypad onKeyPress={handleKeyPress} />
