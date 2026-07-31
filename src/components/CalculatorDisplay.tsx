@@ -34,7 +34,7 @@ export default function CalculatorDisplay({
         {expressionContent}
       </div>
       <div className="display-feedback" aria-live={hasError ? 'assertive' : 'polite'}>
-        <div className="display-result" aria-hidden={hasError}> {result || 'Result area'}</div>
+        <div className="display-result" data-testid="display-result" aria-hidden={hasError}> {result || 'Result area'}</div>
         <div className={`display-error ${hasError ? 'display-error--visible' : ''}`} role="alert">
           {hasError && (
             <div className="display-error__wrapper">
@@ -42,7 +42,7 @@ export default function CalculatorDisplay({
                 ⚠️
               </span>
               <div>
-                <p className="display-error__message">{error}</p>
+                <p className="display-error__message" data-testid="display-error-message">{error}</p>
                 <p className="display-error__hint">Edit the expression to clear this message.</p>
               </div>
             </div>
