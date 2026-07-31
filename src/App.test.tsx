@@ -60,3 +60,42 @@ describe('Calculator error handling', () => {
     expect(screen.queryByText('Cannot divide by zero')).not.toBeInTheDocument()
   })
 })
+
+// New tests for nested expressions and unmatched parentheses
+
+describe('Nested expression evaluation and validation feedback', () => {
+  it('correctly evaluates nested parentheses expressions', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    // Expression: (2+(3*4)) = 14
+    await clickKey(user, '(')
+    await clickKey(user, '2')
+    await clickKey(user, '+')
+    await clickKey(user, '(')
+    await clickKey(user, '3')
+    await clickKey(user, '×')
+    await clickKey(user, '4')
+    await clickKey(user, ')')
+    await clickKey(user, ')')
+    await clickKey(user, '=')
+
+    expect(await screen.findByTestId('display-result')).toHaveTextContent('14')
+    expect(screen.getByText('Result')).toBeInTheDocument()
+  })
+
+  it('surfaces mismatched parentheses with a clear error', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    // Expression: (2+3 = Mismatched parentheses
+    await clickKey(user, '(')
+    await clickKey(user, '2')
+    await clickKey(user, '+')
+    await clickKey(user, '3')
+    await clickKey(user, '=')
+
+    expect(await screen.findByText('Mismatched parentheses')).toBeInTheDocument()
+    expect(screen.getByText('Error detected – fix expression')).toBeInTheDocument()
+  })
+})
