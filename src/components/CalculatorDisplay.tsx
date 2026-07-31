@@ -6,6 +6,7 @@ type CalculatorDisplayProps = {
   statusLabel?: string
   error?: string
   hasError?: boolean
+  angleModeLabel?: string
 }
 
 export default function CalculatorDisplay({
@@ -13,7 +14,8 @@ export default function CalculatorDisplay({
   result = '',
   statusLabel = 'Ready',
   error = '',
-  hasError = false
+  hasError = false,
+  angleModeLabel = 'Degrees'
 }: CalculatorDisplayProps) {
   const expressionContent = expression || 'Enter an expression'
   return (
@@ -25,16 +27,18 @@ export default function CalculatorDisplay({
         <span>{statusLabel}</span>
         <span className="display-subtle">Scientific toolbar</span>
       </div>
-      <div className="display-operators-hint" aria-live="polite">
-        Supports <span aria-label="percent symbol">%</span> (percent-of or ratio) and <span aria-label="caret symbol">^</span>{' '}
-        (exponent) — e.g. <span className="display-helper-example">200+10%</span> or{' '}
-        <span className="display-helper-example">2^8</span>
+      <div className="display-mode" aria-live="polite">
+        <span>Angle mode:</span>
+        <strong>{angleModeLabel}</strong>
+        <span className="display-mode-hint">Trig results and inputs follow this mode</span>
       </div>
       <div className={`display-expression ${hasError ? 'display-expression--error' : ''}`} aria-live="polite">
         {expressionContent}
       </div>
       <div className="display-feedback" aria-live={hasError ? 'assertive' : 'polite'}>
-        <div className="display-result" data-testid="display-result" aria-hidden={hasError}> {result || 'Result area'}</div>
+        <div className="display-result" data-testid="display-result" aria-hidden={hasError}>
+          {result || 'Result area'}
+        </div>
         <div className={`display-error ${hasError ? 'display-error--visible' : ''}`} role="alert">
           {hasError && (
             <div className="display-error__wrapper">
@@ -42,7 +46,9 @@ export default function CalculatorDisplay({
                 ⚠️
               </span>
               <div>
-                <p className="display-error__message" data-testid="display-error-message">{error}</p>
+                <p className="display-error__message" data-testid="display-error-message">
+                  {error}
+                </p>
                 <p className="display-error__hint">Edit the expression to clear this message.</p>
               </div>
             </div>
